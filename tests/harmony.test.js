@@ -101,6 +101,65 @@ describe('in-photo combinations', () => {
   });
 });
 
+describe('нейтральные гармонии зависят от источника (аудит 1b)', () => {
+  const milk = { r: 248, g: 241, b: 229 };
+  const coldGray = { r: 170, g: 178, b: 186 };
+  const graphite = { r: 44, g: 46, b: 50 };
+  const meanL = (sw) => sw.reduce((s, x) => s + rgbToOklch(x.rgb).L, 0) / sw.length;
+
+  it('монохром молочного светлее монохрома графита минимум на 0.2', () => {
+    const m = meanL(classicalHarmonies(milk).monochrome.swatches);
+    const g = meanL(classicalHarmonies(graphite).monochrome.swatches);
+    expect(m - g).toBeGreaterThan(0.2);
+  });
+  it('холодное серое даёт более холодный ряд, чем молочное', () => {
+    const warmHue = (h) => (h >= 20 && h <= 110) || h >= 340;
+    const coldRow = classicalHarmonies(coldGray).analogous.swatches.slice(1);
+    const milkRow = classicalHarmonies(milk).analogous.swatches.slice(1);
+    const coldWarmCount = coldRow.filter((s) => { const H = rgbToOklch(s.rgb).H; return H !== null && warmHue(H); }).length;
+    const milkWarmCount = milkRow.filter((s) => { const H = rgbToOklch(s.rgb).H; return H !== null && warmHue(H); }).length;
+    expect(milkWarmCount).toBeGreaterThanOrEqual(coldWarmCount);
+    expect(meanL(classicalHarmonies(coldGray).monochrome.swatches)).toBeLessThan(meanL(classicalHarmonies(milk).monochrome.swatches));
+  });
+  it('исходный HEX присутствует в КАЖДОЙ классической гармонии (включая нейтрали)', () => {
+    for (const base of [milk, coldGray, graphite, { r: 200, g: 60, b: 60 }]) {
+      const hex = rgbToHex(base.r, base.g, base.b);
+      const h = classicalHarmonies(base);
+      for (const k of ['monochrome', 'analogous', 'complementary', 'split', 'triad', 'neutral']) {
+        expect(h[k].swatches.some((s) => s.hex === hex)).toBe(true);
+      }
+    }
+  });
+  it('нейтральное трио: тёмное остаётся тёмным, светлое — светлым', () => {
+    const darkCalm = trioForColor(graphite, []).calm.swatches;
+    expect(Math.max(...darkCalm.map((s) => rgbToOklch(s.rgb).L))).toBeLessThan(0.75);
+    const lightCalm = trioForColor({ r: 250, g: 250, b: 248 }, []).calm.swatches;
+    expect(Math.min(...lightCalm.map((s) => rgbToOklch(s.rgb).L))).toBeGreaterThan(0.5);
+  });
+  it('точный акцент из фото не модифицируется и помечен «из фото»', () => {
+    const base = { r: 245, g: 245, b: 244 };
+    const pal = [
+      { r: 245, g: 245, b: 244, percentage: 80, center: {} },
+      { r: 150, g: 30, b: 40, percentage: 6, center: {} }
+    ];
+    const t = trioForColor(base, pal);
+    const acc = t.accent.swatches.find((s) => s.badge === 'из фото');
+    expect(acc).toBeDefined();
+    expect([acc.rgb.r, acc.rgb.g, acc.rgb.b]).toEqual([150, 30, 40]);
+    expect(acc.hex).toBe('#961E28');
+  });
+  it('никаких source=photo-suggestion: только точное фото или предложение', () => {
+    const all = [];
+    for (const base of [milk, coldGray, graphite]) {
+      const t = trioForColor(base, [{ r: 150, g: 30, b: 40, percentage: 6, center: {} }]);
+      all.push(...t.calm.swatches, ...t.contrast.swatches, ...t.accent.swatches);
+    }
+    expect(all.some((s) => s.source === 'photo-suggestion')).toBe(false);
+    for (const s of all.filter((x) => x.source === 'photo')) {
+      expect(['выбран', 'из фото'].includes(s.badge)).toBe(true);
+    }
+  });
+});
 describe('поэтические имена', () => {
   it('нейтрали не получают странных хроматических имён', () => {
     const neutrals = [
