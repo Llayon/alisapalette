@@ -81,17 +81,18 @@ test('загрузка, палитра, гармонии, сортировка, 
     expect([...orders].sort((a, b) => a - b).join(',')).toBe(orders.join(','));
   }
 
-  // Экспорт открывается и рисует карточку
+  // Story Studio открывается, код палитры на месте, предпросмотр рисуется
   await page.locator('#openStoriesModalBtn').click();
   await expect(page.locator('#exportModal')).toBeVisible();
   const code = await page.locator('#exportCodeArea').inputValue();
   expect(code).toContain('--color-1');
   const cardDrawn = await page.evaluate(() => {
-    const cv = document.getElementById('exportCardCanvas');
+    const cv = document.getElementById('storyPreview');
     const d = cv.getContext('2d').getImageData(10, 10, 10, 10).data;
     return [...d].some((v) => v !== 0);
   });
   expect(cardDrawn).toBe(true);
+  await expect(page.locator('#storyStatus.ready')).toBeVisible({ timeout: 15000 });
   await page.locator('#closeExportBtn').click();
 
   // Парфюм и товары не падают
