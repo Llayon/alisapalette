@@ -40,14 +40,57 @@ function swatch(lch, source = 'suggested') {
   return { ...h, lch, source };
 }
 
+function baseSwatch(baseRgb, lch) {
+  return {
+    rgb: baseRgb,
+    hex: rgbToHex(baseRgb),
+    name: getPoeticColorName(baseRgb.r, baseRgb.g, baseRgb.b),
+    lch,
+    source: 'photo',
+    badge: 'выбран'
+  };
+}
+
+/**
+ * Температура нейтрали: собственный hue (если информативен при C>=0.008),
+ * иначе голос хроматичных соседей по фото, иначе тёплый default для lifestyle.
+ * Возвращает число 0..360 (никогда null).
+ */
+function neutralTempH(lch, palette = []) {
+  if (lch.H !== null && lch.C >= 0.008) return lch.H;
+  const chrom = (palette || [])
+    .map((p) => rgbToOklch(p))
+    .filter((o) => o.C >= 0.05 && o.H !== null);
+  if (chrom.length) {
+    const warm = chrom.filter((o) => (o.H >= 20 && o.H <= 110) || o.H >= 340).length;
+    return warm >= chrom.length / 2 ? 75 : 250;
+  }
+  return 75;
+}
+
+/**
+ * Тональная растяжка вокруг исходной светлоты: тёмный остаётся тёмным,
+ * светлый — светлым. Всегда 3–4 ступени.
+ */
+function tonalSteps(L, tempH, C) {
+  const c = Math.max(0.012, Math.min(C, 0.035));
+  const clampL = (v) => Math.min(0.95, Math.max(0.12, v));
+  const out = [];
+  for (const t of [L - 0.22, L - 0.08, L + 0.08, L + 0.24]) {
+    const Lc = clampL(t);
+    if (out.length && Math.abs(Lc - out[out.length - 1].L) < 0.06) continue;
+    out.push({ L: Lc, C: c, H: tempH });
+  }
+  return out;
+}
+
 function chromaticTrio(baseRgb, lch, palette) {
   const { L, C, H } = lch;
   const softC = Math.max(0.03, Math.min(C * 0.92, 0.11));
-  const baseHex = rgbToHex(baseRgb);
 
   // Спокойно: тональное + аналоговое, приглушённые (не синтетика).
   const calmSw = [
-    { rgb: baseRgb, hex: baseHex, name: getPoeticColorName(baseRgb.r, baseRgb.g, baseRgb.b), lch, source: 'photo' },
+    baseSwatch(baseRgb, lch),
     swatch({ L: Math.min(0.95, L + 0.13), C: softC * 0.55, H }),
     swatch({ L: Math.max(0.18, L - 0.13), C: softC * 0.8, H: shiftHue(H, 22) }),
     swatch({ L, C: softC, H: shiftHue(H, -24) })
@@ -57,7 +100,7 @@ function chromaticTrio(baseRgb, lch, palette) {
   const compL = L > 0.68 ? 0.42 : L < 0.35 ? 0.74 : 0.55;
   const compC = Math.max(0.05, Math.min(C, 0.13));
   const contrastSw = [
-    { rgb: baseRgb, hex: baseHex, name: getPoeticColorName(baseRgb.r, baseRgb.g, baseRgb.b), lch, source: 'photo' },
+    baseSwatch(baseRgb, lch),
     swatch({ L: compL, C: compC, H: shiftHue(H, 180) }),
     swatch({ L: Math.min(0.93, (L + compL) / 2 + 0.12), C: 0.025, H: shiftHue(H, 180) })
   ];
@@ -68,7 +111,7 @@ function chromaticTrio(baseRgb, lch, palette) {
   const accentSw = [
     swatch(warmNeutral),
     swatch(deepNeutral),
-    { rgb: baseRgb, hex: baseHex, name: getPoeticColorName(baseRgb.r, baseRgb.g, baseRgb.b), lch, source: 'photo' },
+    baseSwatch(baseRgb, lch),
     swatch({ L: L > 0.6 ? 0.5 : 0.68, C: Math.max(0.1, Math.min(0.17, C + 0.04)), H })
   ];
 
@@ -91,56 +134,57 @@ function chromaticTrio(baseRgb, lch, palette) {
   };
 }
 
-function neutralTrio(baseRgb, lch, palette) {
-  const { L } = lch;
-  const baseHex = rgbToHex(baseRgb);
-  const baseName = getPoeticColorName(baseRgb.r, baseRgb.g, baseRgb.b);
-  const base = { rgb: baseRgb, hex: baseHex, name: baseName, lch, source: 'photo' };
+function neutralTrio(baseRgb, lch, palette = []) {
+  const { L, C } = lch;
+  const base = baseSwatch(baseRgb, lch);
+  const tempH = neutralTempH(lch, palette);
+  const steps = tonalSteps(L, tempH, C);
+  const lightest = steps.reduce((a, b) => (b.L > a.L ? b : a), steps[0]);
+  const mid = steps[Math.floor(steps.length / 2)];
 
-  // Определяем температуру исходника по ближайшим хроматичным соседям в фото,
-  // иначе — тёплая по умолчанию для lifestyle (но честно: «нейтральная база»).
-  let warmBias = true;
-  const chrom = (palette || []).map((p) => ({ p, l: rgbToOklch(p) })).filter((o) => o.l.C >= 0.05);
-  if (chrom.length) {
-    const warm = chrom.filter((o) => (o.l.H >= 20 && o.l.H <= 110) || o.l.H >= 340).length;
-    warmBias = warm >= chrom.length / 2;
-  }
-
-  const lightN = { L: 0.93, C: 0.018, H: warmBias ? 80 : 250 };
-  const midN = { L: 0.62, C: 0.028, H: warmBias ? 70 : 240 };
-  const deepN = { L: 0.3, C: 0.022, H: warmBias ? 60 : 250 };
-
-  // Сдержанный акцент: берём реальный акцент из фото, если есть.
-  let accentLch = null;
-  let accentSrc = 'suggested';
+  // Точный акцент из фото (без модификации!) либо сдержанный предложенный.
   const photoAccent = (palette || [])
     .map((p) => ({ p, l: rgbToOklch(p) }))
     .filter((o) => o.l.C >= 0.06 && Math.abs(o.l.L - L) > 0.08)
     .sort((a, b) => b.l.C - a.l.C)[0];
+  let accentSw;
+  let accentExplain;
   if (photoAccent) {
-    accentLch = { L: Math.min(0.62, Math.max(0.42, photoAccent.l.L)), C: Math.min(0.15, photoAccent.l.C), H: photoAccent.l.H };
-    accentSrc = 'photo-suggestion';
+    const p = photoAccent.p;
+    accentSw = {
+      rgb: { r: p.r, g: p.g, b: p.b },
+      hex: rgbToHex(p.r, p.g, p.b),
+      name: getPoeticColorName(p.r, p.g, p.b),
+      lch: photoAccent.l,
+      source: 'photo',
+      badge: 'из фото'
+    };
+    accentExplain = 'Нейтральная база плюс оттенок, уже встречающийся в кадре (без изменений).';
   } else {
-    accentLch = { L: 0.52, C: 0.09, H: warmBias ? 30 : 200 }; // приглушённый, не синтетика
+    const warmRegion = (tempH >= 20 && tempH <= 110) || tempH >= 340;
+    accentSw = swatch({ L: 0.52, C: 0.09, H: warmRegion ? 30 : 200 });
+    accentExplain = 'Нейтральная база плюс один сдержанный выразительный оттенок.';
   }
+
+  const opposite = L > 0.55
+    ? { L: 0.25, C: 0.018, H: tempH }
+    : { L: 0.92, C: 0.018, H: tempH };
 
   return {
     calm: {
       id: 'calm', title: 'Спокойно',
-      explain: 'Тональные переходы нейтралей — без резких цветовых пятен.',
-      swatches: [base, swatch(lightN), swatch(midN), swatch(deepN)]
+      explain: 'Тональные переходы вокруг исходной светлоты — без резких пятен.',
+      swatches: [base, ...steps.map((s) => swatch(s))]
     },
     contrast: {
       id: 'contrast', title: 'Контрастно',
-      explain: 'Контраст по светлоте: светлая нейтраль против глубокой.',
-      swatches: [base, swatch({ L: L > 0.6 ? 0.25 : 0.92, C: 0.02, H: warmBias ? 75 : 250 }), swatch(midN)]
+      explain: 'Контраст по светлоте относительно исходного оттенка.',
+      swatches: [base, swatch(opposite), swatch(mid)]
     },
     accent: {
       id: 'accent', title: 'Акцент',
-      explain: photoAccent
-        ? 'Нейтральная база плюс оттенок, уже встречающийся в кадре.'
-        : 'Нейтральная база плюс один сдержанный выразительный оттенок.',
-      swatches: [base, swatch(lightN), { ...swatch(accentLch), source: accentSrc }]
+      explain: accentExplain,
+      swatches: [base, swatch(lightest), accentSw]
     }
   };
 }
@@ -151,48 +195,64 @@ export function classicalHarmonies(baseRgb) {
   const lch = rgbToOklch(baseRgb);
   const out = {};
   if (lch.C < NEAR_NEUTRAL_C) {
+    // Нейтрали генерируются ОТ исходного OKLCH (светлота + температура),
+    // а не фиксированным пресетом: тёплое молочное, холодное серое и графит
+    // дают разные, уместные им ряды. Исходный цвет всегда первый («выбран»).
+    const tempH = neutralTempH(lch, []);
+    const base = baseSwatch(baseRgb, lch);
+    const steps = tonalSteps(lch.L, tempH, lch.C);
+    const clampL = (v) => Math.min(0.95, Math.max(0.12, v));
     out.monochrome = {
       id: 'monochrome', title: 'Монохромная',
-      explain: 'Несколько оттенков близкой нейтрали с продуманными различиями по светлоте.',
-      swatches: [
-        swatch({ L: 0.92, C: 0.018, H: 80 }), swatch({ L: 0.74, C: 0.024, H: 75 }),
-        swatch({ L: 0.55, C: 0.026, H: 70 }), swatch({ L: 0.34, C: 0.022, H: 65 })
-      ]
+      explain: 'Тональные ступени вокруг светлоты исходного оттенка.',
+      swatches: [base, ...steps.slice(0, 3).map((s) => swatch(s))]
     };
     out.analogous = {
       id: 'analogous', title: 'Аналоговая',
-      explain: 'Для нейтралей — тёплая либо холодная сдержанная палитра.',
-      swatches: [swatch({ L: 0.9, C: 0.02, H: 80 }), swatch({ L: 0.68, C: 0.035, H: 65 }), swatch({ L: 0.45, C: 0.03, H: 50 })]
+      explain: 'Сдержанные нейтрали с лёгким уходом в тёплую и холодную сторону.',
+      swatches: [
+        base,
+        swatch({ L: clampL(lch.L - 0.06), C: 0.028, H: shiftHue(tempH, -18) }),
+        swatch({ L: clampL(lch.L - 0.14), C: 0.028, H: shiftHue(tempH, 18) })
+      ]
     };
     out.neutral = {
       id: 'neutral', title: 'Нейтральная',
-      explain: 'Тёплые и холодные нейтрали плюс контраст по светлоте.',
-      swatches: [swatch({ L: 0.93, C: 0.018, H: 80 }), swatch({ L: 0.7, C: 0.02, H: 250 }), swatch({ L: 0.32, C: 0.02, H: 70 })]
+      explain: 'Исходный оттенок плюс тёплая светлая и холодная средняя нейтрали.',
+      swatches: [
+        base,
+        swatch({ L: 0.9, C: 0.018, H: 80 }),
+        swatch({ L: clampL(lch.L - 0.05), C: 0.018, H: 250 })
+      ]
     };
     out.complementary = {
       id: 'complementary', title: 'Комплементарная',
-      explain: 'К ахроматическим цветам круг не применяется — показан светлотный контраст.',
-      swatches: [swatch({ L: lch.L, C: 0.015, H: 90 }), swatch({ L: lch.L > 0.6 ? 0.28 : 0.9, C: 0.015, H: 250 })]
+      explain: 'К ахроматическим цветам круг не применяется — показан светлотный контраст с исходным.',
+      swatches: [base, swatch({ L: lch.L > 0.6 ? 0.28 : 0.9, C: 0.015, H: tempH })]
     };
     out.split = {
       id: 'split', title: 'Разделённо-комплементарная',
-      explain: 'Для нейтралей заменена тональной растяжкой.',
-      swatches: [swatch({ L: 0.9, C: 0.015, H: 80 }), swatch({ L: 0.6, C: 0.02, H: 80 }), swatch({ L: 0.32, C: 0.02, H: 80 })]
+      explain: 'Для нейтралей заменена тональной растяжкой от исходного.',
+      swatches: [base, ...steps.slice(0, 2).map((s) => swatch(s))]
     };
     out.triad = {
       id: 'triad', title: 'Триадная',
-      explain: 'К нейтралям не применяется механически — показаны три ступени светлоты.',
-      swatches: [swatch({ L: 0.88, C: 0.015, H: 90 }), swatch({ L: 0.6, C: 0.015, H: 90 }), swatch({ L: 0.34, C: 0.015, H: 90 })]
+      explain: 'К нейтралям не применяется механически — показаны три ступени от исходного.',
+      swatches: [base, ...steps.slice(1, 3).map((s) => swatch(s))]
     };
     return out;
   }
 
   const { L, C, H } = lch;
   const c = Math.max(0.04, Math.min(C, 0.12));
+  // Каждая гармония начинается с точного исходного цвета («выбран»):
+  // преобразованные версии показаны рядом и не подменяют его.
+  const base = baseSwatch(baseRgb, lch);
   out.monochrome = {
     id: 'monochrome', title: 'Монохромная',
     explain: 'Оттенки близкого hue с продуманными различиями по светлоте и chroma.',
     swatches: [
+      base,
       swatch({ L: Math.min(0.94, L + 0.18), C: c * 0.45, H }),
       swatch({ L: Math.min(0.9, L + 0.07), C: c * 0.75, H }),
       swatch({ L, C: c, H }),
@@ -202,28 +262,28 @@ export function classicalHarmonies(baseRgb) {
   out.analogous = {
     id: 'analogous', title: 'Аналоговая',
     explain: 'Близкие оттенки цветового круга для спокойной композиции.',
-    swatches: [swatch({ L, C: c, H: shiftHue(H, -28) }), swatch({ L, C: c, H }), swatch({ L, C: c, H: shiftHue(H, 28) })]
+    swatches: [base, swatch({ L, C: c, H: shiftHue(H, -28) }), swatch({ L, C: c, H }), swatch({ L, C: c, H: shiftHue(H, 28) })]
   };
   out.complementary = {
     id: 'complementary', title: 'Комплементарная',
     explain: 'Цветовой контраст с противоположной областью круга.',
-    swatches: [swatch({ L, C: c, H }), swatch({ L: L > 0.65 ? 0.45 : 0.7, C: c, H: shiftHue(H, 180) })]
+    swatches: [base, swatch({ L: L > 0.65 ? 0.45 : 0.7, C: c, H: shiftHue(H, 180) })]
   };
   out.split = {
     id: 'split', title: 'Разделённо-комплементарная',
     explain: 'Основной оттенок и два цвета рядом с противоположным hue.',
-    swatches: [swatch({ L, C: c, H }), swatch({ L, C: c, H: shiftHue(H, 150) }), swatch({ L, C: c, H: shiftHue(H, 210) })]
+    swatches: [base, swatch({ L, C: c, H: shiftHue(H, 150) }), swatch({ L, C: c, H: shiftHue(H, 210) })]
   };
   out.triad = {
     id: 'triad', title: 'Триадная',
     explain: 'Три различающихся направления на цветовом круге.',
-    swatches: [swatch({ L, C: c, H }), swatch({ L, C: c, H: shiftHue(H, 120) }), swatch({ L, C: c, H: shiftHue(H, 240) })]
+    swatches: [base, swatch({ L, C: c, H: shiftHue(H, 120) }), swatch({ L, C: c, H: shiftHue(H, 240) })]
   };
   out.neutral = {
     id: 'neutral', title: 'Нейтральная',
     explain: 'Основной цвет и подходящие тёплые либо холодные нейтрали.',
     swatches: [
-      swatch({ L, C: c, H }),
+      base,
       swatch({ L: 0.9, C: 0.02, H: 80 }),
       swatch({ L: 0.35, C: 0.022, H: 75 })
     ]

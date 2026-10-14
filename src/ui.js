@@ -130,24 +130,34 @@ export function renderProportion(barEl, legendEl, gridEl, badgeEl, onSelect) {
 
 /**
  * Агрегирование по ролям для рекомендации 60-30-10 с явным составом групп.
- * Не утверждает, что фото = гардероб; это предложение композиции.
+ * Роли всегда разные оттенки (без дублей); при 1–2 цветах недостающие роли
+ * честно помечаются как «добавить». Это предложение композиции, а не измерение:
+ * целевые 60/30/10 отделены от фактических процентов кадра.
  */
-function propose603010(sorted) {
+export function propose603010(sorted) {
   if (!sorted.length) return { text: '—', detail: '' };
-  // Группы: база = топ-1 + тёплые/нейтральные крупные; компаньон = следующий хроматичный; акцент = самый насыщенный малый.
   const base = sorted[0];
   const rest = sorted.slice(1);
-  const companion = rest.find((c) => c.percentage >= 8) || rest[0];
-  const accent = [...sorted].sort((a, b) => rgbToOklch(b).C - rgbToOklch(a).C).find((c) => c.percentage <= 18) || sorted[sorted.length - 1];
+  const companion = rest.find((c) => c.percentage >= 8) || rest[0] || null;
+  // Акцент — самый насыщенный малый оттенок, исключая уже занятые роли.
+  const accent = [...sorted]
+    .sort((a, b) => rgbToOklch(b).C - rgbToOklch(a).C)
+    .find((c) => c !== base && c !== companion && c.percentage <= 18) || null;
   const bHex = rgbToHex(base.r, base.g, base.b);
-  const cHex = companion ? rgbToHex(companion.r, companion.g, companion.b) : null;
-  const aHex = accent ? rgbToHex(accent.r, accent.g, accent.b) : null;
   const text = `База ~60%: ${getPoeticColorName(base.r, base.g, base.b)} (${bHex})` +
-    (companion ? ` · Компаньон ~30%: ${getPoeticColorName(companion.r, companion.g, companion.b)} (${cHex})` : '') +
-    (accent && accent !== companion ? ` · Акцент ~10%: ${getPoeticColorName(accent.r, accent.g, accent.b)} (${aHex})` : '');
-  const detail = `Группы: база — «${getPoeticColorName(base.r, base.g, base.b)}» (${base.percentage.toFixed(1)}% кадра)` +
-    (companion ? `; компаньон — «${getPoeticColorName(companion.r, companion.g, companion.b)}» (${companion.percentage.toFixed(1)}%)` : '; компаньона в кадре мало — можно добавить') +
-    (accent && accent !== companion ? `; акцент — «${getPoeticColorName(accent.r, accent.g, accent.b)}» (${accent.percentage.toFixed(1)}%). Проверяйте все три доли — это рекомендация, а не измерение.` : '.');
+    (companion
+      ? ` · Компаньон ~30%: ${getPoeticColorName(companion.r, companion.g, companion.b)} (${rgbToHex(companion.r, companion.g, companion.b)})`
+      : ' · Компаньон ~30%: в кадре один оттенок — можно добавить') +
+    (accent
+      ? ` · Акцент ~10%: ${getPoeticColorName(accent.r, accent.g, accent.b)} (${rgbToHex(accent.r, accent.g, accent.b)})`
+      : ' · Акцент ~10%: в кадре нет отдельного малого оттенка — можно добавить');
+  const detail = `Группы: база — «${getPoeticColorName(base.r, base.g, base.b)}» (в кадре ${base.percentage.toFixed(1)}%, цель ~60%)` +
+    (companion
+      ? `; компаньон — «${getPoeticColorName(companion.r, companion.g, companion.b)}» (в кадре ${companion.percentage.toFixed(1)}%, цель ~30%)`
+      : '; компаньона в кадре нет') +
+    (accent
+      ? `; акцент — «${getPoeticColorName(accent.r, accent.g, accent.b)}» (в кадре ${accent.percentage.toFixed(1)}%, цель ~10%). Это рекомендация композиции, а не измерение.`
+      : '; акцента в кадре нет. Это рекомендация композиции, а не измерение.');
   return { text, detail };
 }
 
@@ -250,7 +260,7 @@ export function renderHarmony(container, onCopyHex, onCopyCombo) {
         <span class="sw" style="background:${s.hex}"></span>
         <span class="hx">${s.hex}</span>
         <span class="nn">${esc(s.name)}</span>
-        <span class="src">${s.source === 'photo' ? 'ваш цвет' : s.source === 'photo-suggestion' ? 'акцент из фото' : 'добавить'}</span>
+        <span class="src">${s.badge || (s.source === 'photo' ? 'ваш цвет' : 'добавить')}</span>
       </div>`).join('');
     el.innerHTML = `<h3>${combo.title}</h3><p>${esc(combo.explain)}</p>
       <div class="strip">${strip}</div><div class="swatches">${rows}</div>
