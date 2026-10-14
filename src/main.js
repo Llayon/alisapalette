@@ -6,6 +6,11 @@ import { analyzePixels, recalculateShares, sortPaletteItems, resetIdCounter } fr
 import { rgbToHex, textOnColor } from './color-science.js';
 import { getPoeticColorName } from './poetic.js';
 import { renderPins, renderProportion, renderPaletteCards, renderHarmony, renderPerfume, renderProducts, formatColorValue, esc } from './ui.js';
+import { renderStory } from './story/renderer.js';
+import { renderStoryToBlob, ensureStoryFonts, storyFileName, downloadBlob } from './story/export.js';
+import { shareFile, canShareFile, copyText, shareSupport } from './story/share.js';
+import { state as story, storyKey, touchStory, resetStoryForPhoto, isValidChannel, restoreStory, APP_URL } from './story/story-state.js';
+import { templateIds } from './story/templates.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -307,6 +312,7 @@ export async function handleImageFile(file) {
       w = Math.round(w * ratio); h = Math.round(h * ratio);
     }
     resetPhotoState(); // сброс устаревших данных ДО нового анализа
+    resetStoryForPhoto(); // сброс кадрирования/кэша открытки
     mainCanvas.width = w; mainCanvas.height = h;
     ctx.drawImage(bmp, 0, 0, w, h);
     if (bmp.close) { try { bmp.close(); } catch { /* noop */ } }
@@ -472,98 +478,134 @@ document.querySelectorAll('[data-occasion]').forEach((btn) => {
   });
 });
 $('bloggerPromoInput').addEventListener('input', (e) => { state.bloggerPromo = e.target.value.trim() || 'БЛОГ10'; });
+// Подпись канала: только явное валидное значение, без плейсхолдера по умолчанию.
 $('blogHandleInput').addEventListener('input', (e) => {
-  state.blogHandle = e.target.value || '@my_lifestyle_blog';
-  $('storyHandleModalInput').value = state.blogHandle;
-});
-$('storyHandleModalInput').addEventListener('input', (e) => {
-  state.blogHandle = e.target.value || '@my_lifestyle_blog';
-  $('blogHandleInput').value = state.blogHandle;
-  renderExportStoryCard();
-});
-$('storyTitleInput').addEventListener('input', (e) => {
-  state.storyTitle = e.target.value || 'Палитра моего дня';
-  renderExportStoryCard();
+  state.blogHandle = e.target.value.trim();
+  story.channel = state.blogHandle;
+  touchStory();
+  syncStoryInputs();
+  scheduleStoryPrepare();
 });
 
-// ---------- экспорт Stories 9:16 ----------
+// ---------- Story Studio ----------
 
 const exportModal = $('exportModal');
-const exportCardCanvas = $('exportCardCanvas');
 const exportCodeArea = $('exportCodeArea');
+const storyPreview = $('storyPreview');
+const storyStatus = $('storyStatus');
+let lastFocusBeforeStudio = null;
+let storyPrepareTimer = null;
+let storyJobSeq = 0;
 
-function renderExportStoryCard() {
-  const W = 720, H = 1280;
-  exportCardCanvas.width = W; exportCardCanvas.height = H;
-  const c = exportCardCanvas.getContext('2d');
-  const tpl = state.storyTemplate;
-  const isDark = tpl === 'editorial';
-  c.fillStyle = isDark ? '#0c0a09' : (tpl === 'polaroid' ? '#EFECE6' : '#FAF6F0');
-  c.fillRect(0, 0, W, H);
-  if (state.palette.length) {
-    const top = state.palette[0];
-    const grad = c.createRadialGradient(W * 0.5, H * 0.25, 40, W * 0.5, H * 0.25, 520);
-    grad.addColorStop(0, `rgba(${top.r}, ${top.g}, ${top.b}, ${isDark ? 0.22 : 0.16})`);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    c.fillStyle = grad;
-    c.fillRect(0, 0, W, H);
+function paletteSig() {
+  return state.palette.map((c) => `${c.r},${c.g},${c.b},${c.percentage}`).join(';');
+}
+
+function storyInput() {
+  return {
+    template: story.template,
+    photo: mainCanvas.width ? mainCanvas : null,
+    palette: state.palette,
+    title: story.title,
+    channel: isValidChannel(story.channel) ? story.channel.trim() : '',
+    count: story.count,
+    showNames: story.showNames,
+    showHex: story.showHex,
+    showPct: story.showPct,
+    fit: story.fit,
+    cropX: story.cropX,
+    cropY: story.cropY,
+    olfactory: state.olfactoryProfile
+  };
+}
+
+function setStoryStatus(kind, text) {
+  storyStatus.className = 'timings ' + (kind || '');
+  storyStatus.textContent = text;
+}
+
+/** Синхронный предпросмотр тем же renderer (540×960). */
+function renderStoryPreview() {
+  try {
+    const ctxp = storyPreview.getContext('2d');
+    ctxp.clearRect(0, 0, storyPreview.width, storyPreview.height);
+    renderStory(ctxp, storyPreview.width, storyPreview.height, storyInput());
+  } catch (e) {
+    setStoryStatus('error', 'Предпросмотр недоступен');
   }
-  c.textAlign = 'center';
-  c.fillStyle = isDark ? '#FAFAF9' : '#1C1917';
-  c.font = 'bold 34px Inter, sans-serif';
-  c.fillText(state.storyTitle.slice(0, 40), W / 2, 78);
-  c.fillStyle = isDark ? '#A8A29E' : '#78716C';
-  c.font = '500 17px Inter, sans-serif';
-  c.fillText('ПАЛИТРА КАДРА · CHROMASTYLE', W / 2, 112);
-  const pad = 48;
-  const photoBoxW = W - pad * 2;
-  const photoBoxH = 510;
-  const photoY = 142;
-  c.save();
-  c.beginPath();
-  if (c.roundRect) c.roundRect(pad, photoY, photoBoxW, photoBoxH, 24); else c.rect(pad, photoY, photoBoxW, photoBoxH);
-  c.clip();
-  if (mainCanvas.width && mainCanvas.height) {
-    const imgRatio = mainCanvas.width / mainCanvas.height;
-    const boxRatio = photoBoxW / photoBoxH;
-    let dw = photoBoxW, dh = photoBoxH, dx = pad, dy = photoY;
-    if (imgRatio > boxRatio) { dw = photoBoxH * imgRatio; dx = pad - (dw - photoBoxW) / 2; }
-    else { dh = photoBoxW / imgRatio; dy = photoY - (dh - photoBoxH) / 2; }
-    c.drawImage(mainCanvas, dx, dy, dw, dh);
+}
+
+function syncStoryInputs() {
+  document.querySelectorAll('[data-story-template]').forEach((b) => b.classList.toggle('on', b.dataset.storyTemplate === story.template));
+  document.querySelectorAll('[data-story-count]').forEach((b) => b.classList.toggle('on', parseInt(b.dataset.storyCount, 10) === story.count));
+  document.querySelectorAll('[data-story-fit]').forEach((b) => b.classList.toggle('on', b.dataset.storyFit === story.fit));
+  $('storyTitleInput').value = story.title;
+  $('storyChannelInput').value = story.channel;
+  $('storyNames').checked = story.showNames;
+  $('storyHex').checked = story.showHex;
+  $('storyPct').checked = story.showPct;
+  const sup = shareSupport();
+  $('shareStoryBtn').disabled = !story.cache.ready;
+  $('shareStoryBtn').title = !sup.hasShare
+    ? 'Системная отправка не поддерживается — используйте сохранение PNG'
+    : (!story.cache.ready ? 'Открытка готовится…' : 'Отправить через системное меню');
+}
+
+/**
+ * Асинхронная подготовка Blob с версионированием: устаревший результат
+ * отбрасывается и никогда не попадёт в share/save.
+ */
+function scheduleStoryPrepare() {
+  renderStoryPreview();
+  syncStoryInputs();
+  clearTimeout(storyPrepareTimer);
+  const mySeq = ++storyJobSeq;
+  const key = storyKey(story, paletteSig(), mainCanvas.width, mainCanvas.height);
+  if (story.cache.ready && story.cache.key === key && story.cache.blob) {
+    setStoryStatus('ready', `Готово · PNG ${story.cache.W}×${story.cache.H}${story.cache.fallback ? ' (эконом-режим)' : ''}`);
+    return;
   }
-  c.restore();
-  const listStartY = photoY + photoBoxH + 38;
-  const maxColors = Math.min(state.palette.length, 6);
-  for (let i = 0; i < maxColors; i++) {
-    const item = state.palette[i];
-    const hex = rgbToHex(item.r, item.g, item.b);
-    const poetic = getPoeticColorName(item.r, item.g, item.b);
-    const y = listStartY + i * 76;
-    c.fillStyle = isDark ? '#1C1917' : '#FFFFFF';
-    c.beginPath();
-    if (c.roundRect) c.roundRect(pad, y, photoBoxW, 62, 16); else c.rect(pad, y, photoBoxW, 62);
-    c.fill();
-    c.fillStyle = hex;
-    c.beginPath(); c.arc(pad + 34, y + 31, 20, 0, Math.PI * 2); c.fill();
-    c.textAlign = 'left';
-    c.fillStyle = isDark ? '#F5F5F4' : '#1C1917';
-    c.font = 'bold 21px Inter, sans-serif';
-    c.fillText(poetic.slice(0, 28), pad + 68, y + 29);
-    c.fillStyle = isDark ? '#A8A29E' : '#78716C';
-    c.font = '500 15px monospace';
-    c.fillText(hex, pad + 68, y + 50);
-    c.textAlign = 'right';
-    c.fillStyle = isDark ? '#FB7185' : '#E11D48';
-    c.font = 'bold 19px monospace';
-    c.fillText(`${item.percentage.toFixed(1)}%`, W - pad - 20, y + 38);
+  setStoryStatus('busy', 'Готовим открытку…');
+  syncStoryInputs();
+  storyPrepareTimer = setTimeout(async () => {
+    if (mySeq !== storyJobSeq) return; // устаревшая задача
+    const myVersion = story.version;
+    const t0 = performance.now();
+    try {
+      const res = await renderStoryToBlob(storyInput());
+      if (mySeq !== storyJobSeq || myVersion !== story.version) return; // настройки изменились
+      if (story.cache.url) { try { URL.revokeObjectURL(story.cache.url); } catch { /* noop */ } }
+      story.cache = {
+        key, blob: res.blob, url: URL.createObjectURL(res.blob),
+        ready: true, W: res.W, H: res.H, fallback: res.fallback,
+        ms: Math.round(performance.now() - t0)
+      };
+      setStoryStatus('ready', `Готово за ${story.cache.ms} мс · PNG ${res.W}×${res.H}${res.fallback ? ' (эконом-режим)' : ''}`);
+    } catch (e) {
+      if (mySeq !== storyJobSeq) return;
+      setStoryStatus('error', 'Не получилось собрать открытку. Попробуйте другой шаблон.');
+    }
+    syncStoryInputs();
+  }, 220);
+}
+
+function openStudio() {
+  haptic('light');
+  lastFocusBeforeStudio = document.activeElement;
+  generateExportCode();
+  syncStoryInputs();
+  exportModal.classList.remove('hidden');
+  renderStoryPreview();
+  scheduleStoryPrepare();
+  $('savePngBtn').focus();
+}
+
+function closeStudio() {
+  exportModal.classList.add('hidden');
+  clearTimeout(storyPrepareTimer);
+  if (lastFocusBeforeStudio && lastFocusBeforeStudio.focus) {
+    try { lastFocusBeforeStudio.focus(); } catch { /* noop */ }
   }
-  c.textAlign = 'center';
-  c.fillStyle = isDark ? '#F43F5E' : '#E11D48';
-  c.font = 'bold 22px Inter, sans-serif';
-  c.fillText(`Палитра собрана в ${state.blogHandle}`.slice(0, 42), W / 2, H - 56);
-  c.fillStyle = isDark ? '#78716C' : '#A8A29E';
-  c.font = '500 14px Inter, sans-serif';
-  c.fillText('ChromaStyle · локально в браузере, без сервера', W / 2, H - 32);
 }
 
 function generateExportCode() {
@@ -584,20 +626,180 @@ function generateExportCode() {
   }
 }
 
-$('openStoriesModalBtn').addEventListener('click', () => {
-  haptic('light');
-  generateExportCode();
-  renderExportStoryCard();
-  exportModal.classList.remove('hidden');
-});
-$('closeExportBtn').addEventListener('click', () => exportModal.classList.add('hidden'));
-exportModal.addEventListener('click', (e) => { if (e.target === exportModal) exportModal.classList.add('hidden'); });
-document.querySelectorAll('[data-template]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    state.storyTemplate = btn.dataset.template;
-    document.querySelectorAll('[data-template]').forEach((b) => b.classList.toggle('on', b.dataset.template === state.storyTemplate));
-    renderExportStoryCard();
+$('openStoriesModalBtn').addEventListener('click', openStudio);
+window.openStoryStudio = openStudio;
+// Тестовые хуки: лёгкий meta-рендер и contact-sheet монтаж (2×2) как dataURL.
+window.__storyShot = (template, W = 540, H = 960) => {
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const c = cv.getContext('2d', { willReadFrequently: true });
+  const meta = renderStory(c, W, H, { ...storyInput(), template });
+  return { meta, W, H };
+};
+window.__storyMontage = (templates, cw = 270, ch = 480) => {
+  const grid = document.createElement('canvas');
+  grid.width = cw * 2; grid.height = ch * 2;
+  const g = grid.getContext('2d');
+  g.fillStyle = '#0c0a09';
+  g.fillRect(0, 0, grid.width, grid.height);
+  templates.slice(0, 4).forEach((t, i) => {
+    const cv = document.createElement('canvas');
+    cv.width = cw; cv.height = ch;
+    renderStory(cv.getContext('2d'), cw, ch, { ...storyInput(), template: t });
+    g.drawImage(cv, (i % 2) * cw, Math.floor(i / 2) * ch, cw, ch);
   });
+  return grid.toDataURL('image/png');
+};
+window.__storyCheck = (template) => {
+  const W = 540, H = 960;
+  const K = W / 1080; // meta — в пространстве 1080×1920
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const c = cv.getContext('2d', { willReadFrequently: true });
+  const input = { ...storyInput(), template };
+  const meta = renderStory(c, W, H, input);
+  const data = c.getImageData(0, 0, W, H).data;
+  const at = (x, y) => {
+    const i = (Math.round(y * K) * W + Math.round(x * K)) * 4;
+    return [data[i], data[i + 1], data[i + 2], data[i + 3]];
+  };
+  const swatches = (meta.swatches || []).map((s) => {
+    // центр swatch (вдали от скруглений — swatches всегда прямоугольники)
+    const px = at(s.x + s.w / 2, s.y + s.h / 2);
+    return { want: s.rgb, got: px.slice(0, 3), ok: Math.abs(px[0] - s.rgb[0]) <= 2 && Math.abs(px[1] - s.rgb[1]) <= 2 && Math.abs(px[2] - s.rgb[2]) <= 2 };
+  });
+  let opaque = 0;
+  for (let i = 3; i < data.length; i += 40) if (data[i] > 128) opaque++;
+  const textsSafe = (meta.texts || []).map((t) => (
+    t.x >= -1 && t.y >= -1 && (t.x + t.w) <= 1080 + 1 && (t.y + t.h) <= 1920 + 1
+  ));
+  return {
+    swatches, opaqueRatio: opaque / (data.length / 40),
+    textsInsideCanvas: textsSafe.every(Boolean),
+    swatchCount: swatches.length,
+    allSwatchesOk: swatches.length > 0 && swatches.every((s) => s.ok)
+  };
+};
+$('closeExportBtn').addEventListener('click', closeStudio);
+exportModal.addEventListener('click', (e) => { if (e.target === exportModal) closeStudio(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !exportModal.classList.contains('hidden')) closeStudio();
+});
+document.querySelectorAll('[data-story-template]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    if (!templateIds().includes(btn.dataset.storyTemplate)) return;
+    story.template = btn.dataset.storyTemplate;
+    haptic('light');
+    touchStory();
+    scheduleStoryPrepare();
+  });
+});
+document.querySelectorAll('[data-story-count]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    story.count = Math.min(6, Math.max(3, parseInt(btn.dataset.storyCount, 10) || 5));
+    touchStory();
+    scheduleStoryPrepare();
+  });
+});
+document.querySelectorAll('[data-story-fit]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    story.fit = btn.dataset.storyFit === 'contain' ? 'contain' : 'cover';
+    touchStory();
+    scheduleStoryPrepare();
+  });
+});
+$('storyTitleInput').addEventListener('input', (e) => {
+  story.title = e.target.value;
+  touchStory();
+  scheduleStoryPrepare();
+});
+$('storyChannelInput').addEventListener('input', (e) => {
+  story.channel = e.target.value.trim();
+  state.blogHandle = story.channel;
+  $('blogHandleInput').value = story.channel;
+  touchStory();
+  scheduleStoryPrepare();
+});
+for (const [id, key] of [['storyNames', 'showNames'], ['storyHex', 'showHex'], ['storyPct', 'showPct']]) {
+  $(id).addEventListener('change', (e) => {
+    story[key] = e.target.checked;
+    touchStory();
+    scheduleStoryPrepare();
+  });
+}
+
+// Смещение фото пальцем/мышью прямо на предпросмотре (только cover).
+let cropDrag = null;
+storyPreview.addEventListener('pointerdown', (e) => {
+  if (story.fit !== 'cover') return;
+  cropDrag = { x: e.clientX, y: e.clientY, cx: story.cropX, cy: story.cropY };
+  try { storyPreview.setPointerCapture(e.pointerId); } catch { /* noop */ }
+});
+storyPreview.addEventListener('pointermove', (e) => {
+  if (!cropDrag) return;
+  const r = storyPreview.getBoundingClientRect();
+  story.cropX = Math.min(1, Math.max(0, cropDrag.cx + (e.clientX - cropDrag.x) / r.width));
+  story.cropY = Math.min(1, Math.max(0, cropDrag.cy + (e.clientY - cropDrag.y) / r.height));
+});
+storyPreview.addEventListener('pointerup', () => {
+  if (!cropDrag) return;
+  cropDrag = null;
+  touchStory();
+  scheduleStoryPrepare();
+});
+storyPreview.addEventListener('pointercancel', () => { cropDrag = null; renderStoryPreview(); });
+
+// Сохранить PNG — независимо от Web Share
+$('savePngBtn').addEventListener('click', async () => {
+  haptic('light');
+  setStoryStatus('busy', 'Сохраняем PNG…');
+  try {
+    const key = storyKey(story, paletteSig(), mainCanvas.width, mainCanvas.height);
+    let blob = story.cache.ready && story.cache.key === key ? story.cache.blob : null;
+    let W = story.cache.W, H = story.cache.H;
+    if (!blob) {
+      const res = await renderStoryToBlob(storyInput());
+      blob = res.blob; W = res.W; H = res.H;
+      story.cache = { key, blob, url: URL.createObjectURL(blob), ready: true, W, H, fallback: res.fallback };
+    }
+    downloadBlob(blob, storyFileName(story.template, W, H));
+    haptic('success');
+    copyToClipboard(`PNG ${W}×${H} сохранён`, '#34d399', 'Открытка');
+    setStoryStatus('ready', `PNG ${W}×${H} сохранён · ${storyFileName(story.template, W, H)}`);
+  } catch {
+    setStoryStatus('error', 'Не получилось сохранить. На iPhone: удерживайте картинку предпросмотра.');
+  }
+  syncStoryInputs();
+});
+
+// Поделиться — только готовый Blob, вызов share прямо в клике (user activation)
+$('shareStoryBtn').addEventListener('click', async () => {
+  haptic('light');
+  const key = storyKey(story, paletteSig(), mainCanvas.width, mainCanvas.height);
+  const cached = story.cache.ready && story.cache.key === key ? story.cache : null;
+  if (!cached || !cached.blob) {
+    copyToClipboard('Открытка ещё готовится — подождите секунду', '#fbbf24', 'Подождите');
+    return;
+  }
+  const file = new File([cached.blob], storyFileName(story.template, cached.W, cached.H), { type: 'image/png' });
+  if (!canShareFile(file)) {
+    copyToClipboard('Здесь отправка файлов не поддерживается — используйте «Сохранить PNG»', '#fbbf24', 'Нет отправки');
+    return;
+  }
+  const res = await shareFile(file, { title: story.title || 'ChromaStyle', text: `Моя палитра · ${APP_URL}` });
+  if (res.status === 'shared') {
+    haptic('success');
+    copyToClipboard('Системное меню отправки открыто', '#34d399', 'Готово');
+  } else if (res.status === 'error') {
+    setStoryStatus('error', `Отправка не удалась (${res.error || 'ошибка'}). Сохраните PNG.`);
+  }
+  // cancelled: молча, без fallback-скачивания. unsupported уже обработан выше.
+});
+
+$('copyAppLinkBtn').addEventListener('click', async () => {
+  haptic('light');
+  const ok = await copyText(APP_URL);
+  copyToClipboard(APP_URL, '#f43f5e', ok ? 'Ссылка на приложение' : 'Не скопировалось');
 });
 document.querySelectorAll('[data-code]').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -607,28 +809,11 @@ document.querySelectorAll('[data-code]').forEach((btn) => {
   });
 });
 $('copyExportCodeBtn').addEventListener('click', () => copyToClipboard(exportCodeArea.value, '#f43f5e', 'Код скопирован'));
-$('shareOrDownloadStoryBtn').addEventListener('click', async () => {
-  haptic('success');
-  exportCardCanvas.toBlob(async (blob) => {
-    if (!blob) return;
-    const file = new File([blob], `story-palette-${Date.now()}.png`, { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: state.storyTitle, text: `Палитра собрана в ${state.blogHandle}` });
-        return;
-      } catch { /* fallback */ }
-    }
-    const link = document.createElement('a');
-    link.download = `chromastyle-story-9x16-${Date.now()}.png`;
-    link.href = URL.createObjectURL(blob);
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
-  }, 'image/png');
-});
 
 // ---------- init ----------
 
 window.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-algo]').forEach((b) => b.classList.toggle('on', b.dataset.algo === state.algorithm));
+  restoreStory();
   loadPresetSample('interior');
 });

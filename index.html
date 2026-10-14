@@ -23,7 +23,7 @@
           </div>
           <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-top:2px">
             <span>Бренд блога:</span>
-            <input id="blogHandleInput" type="text" value="@my_lifestyle_blog" style="width:150px;padding:3px 8px;font-size:12px" aria-label="Ник канала">
+            <input id="blogHandleInput" type="text" value="" placeholder="@ваш_канал" style="width:150px;padding:3px 8px;font-size:12px" aria-label="Ник канала">
           </div>
         </div>
       </div>
@@ -178,37 +178,70 @@
     </div>
   </main>
 
-  <div id="exportModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Экспорт открытки">
-    <div class="sheet">
+  <div id="exportModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Story Studio">
+    <div class="sheet studio">
       <div class="rowline">
-        <div><h2 style="font-size:16px">Открытка для Stories (9:16)</h2><p class="sub">PNG 720×1280 + коды палитры. Фактические цвета кадра.</p></div>
-        <button id="closeExportBtn" class="btn small">✕ Закрыть</button>
+        <div><h2 style="font-size:16px">✦ Story Studio</h2><p class="sub">Открытка 1080×1920 из вашей фотографии. Всё — локально на устройстве.</p></div>
+        <button id="closeExportBtn" class="btn small" aria-label="Закрыть студию">✕ Закрыть</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr;gap:14px;margin-top:12px" id="exportGrid">
-        <div style="display:flex;justify-content:center"><canvas id="exportCardCanvas"></canvas></div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div class="tpl-grid" role="group" aria-label="Шаблон">
-            <button class="tpl on" data-template="pinterest">Pinterest</button>
-            <button class="tpl" data-template="polaroid">Полароид</button>
-            <button class="tpl" data-template="editorial">Глянец</button>
-            <button class="tpl" data-template="perfume">Аромат дня</button>
+      <div class="studio-grid">
+        <div class="studio-preview">
+          <canvas id="storyPreview" width="540" height="960" aria-label="Предпросмотр открытки. Потяните, чтобы сместить фото"></canvas>
+          <div class="explain" id="cropHint">Потяните фото, чтобы сместить кадр · работает при режиме «Заполнить»</div>
+          <div class="timings" id="storyStatus" role="status">Готовим открытку…</div>
+        </div>
+        <div class="studio-controls">
+          <div class="tpl-grid" role="group" aria-label="Шаблон открытки">
+            <button class="tpl on" data-story-template="editorial"><b>Editorial</b><span>Воздух и serif</span></button>
+            <button class="tpl" data-story-template="polaroid"><b>Polaroid</b><span>Бумага и рамка</span></button>
+            <button class="tpl" data-story-template="magazine"><b>Magazine</b><span>Смелые блоки</span></button>
+            <button class="tpl" data-story-template="aroma"><b>Aroma</b><span>Аромат дня</span></button>
           </div>
-          <div class="ctrl-grid">
-            <label style="font-size:12px">Заголовок<input id="storyTitleInput" type="text" value="Палитра моего дня"></label>
-            <label style="font-size:12px">Подпись блога<input id="storyHandleModalInput" type="text" value="@my_lifestyle_blog"></label>
+          <label style="font-size:12px">Заголовок
+            <input id="storyTitleInput" type="text" value="Палитра моего дня" maxlength="60" aria-label="Заголовок открытки">
+          </label>
+          <label style="font-size:12px">Подпись канала (необязательно)
+            <input id="storyChannelInput" type="text" value="" placeholder="@ваш_канал" maxlength="33" aria-label="Подпись Telegram-канала">
+          </label>
+          <div class="rowline">
+            <span style="font-size:12px;color:var(--muted)">Оттенков</span>
+            <span class="seg" role="group" aria-label="Число оттенков">
+              <button data-story-count="3">3</button>
+              <button data-story-count="4">4</button>
+              <button data-story-count="5" class="on">5</button>
+              <button data-story-count="6">6</button>
+            </span>
           </div>
-          <button id="shareOrDownloadStoryBtn" class="btn primary" style="justify-content:center">Сохранить / Поделиться (PNG 9:16)</button>
-          <div>
-            <div class="rowline"><span style="font-size:11px;color:var(--muted)">Экспорт кодов</span>
-              <span class="seg" role="group" aria-label="Формат экспорта">
-                <button data-code="css" class="on">CSS</button>
-                <button data-code="json">JSON</button>
-                <button data-code="tailwind">Tailwind</button>
-              </span>
+          <div class="rowline">
+            <span style="font-size:12px;color:var(--muted)">Фото</span>
+            <span class="seg" role="group" aria-label="Режим фото">
+              <button data-story-fit="cover" class="on">Заполнить</button>
+              <button data-story-fit="contain">Вписать</button>
+            </span>
+          </div>
+          <div class="studio-toggles">
+            <label><input type="checkbox" id="storyNames" checked> Названия</label>
+            <label><input type="checkbox" id="storyHex" checked> HEX</label>
+            <label><input type="checkbox" id="storyPct"> Проценты</label>
+          </div>
+          <button id="savePngBtn" class="btn primary" style="justify-content:center">⬇ Сохранить PNG</button>
+          <button id="shareStoryBtn" class="btn" style="justify-content:center">↗ Поделиться…</button>
+          <button id="copyAppLinkBtn" class="btn ghost" style="justify-content:center">⧉ Скопировать ссылку на приложение</button>
+          <div class="notice" id="tgHint">В Telegram: сохраните PNG → откройте Stories → добавьте файл из галереи. Прямая публикация локального фото из браузера невозможна без сервера — мы не загружаем ваши снимки.</div>
+          <details class="adv">
+            <summary>Код палитры (CSS / JSON / Tailwind)</summary>
+            <div class="body">
+              <div class="rowline">
+                <span class="seg" role="group" aria-label="Формат экспорта">
+                  <button data-code="css" class="on">CSS</button>
+                  <button data-code="json">JSON</button>
+                  <button data-code="tailwind">Tailwind</button>
+                </span>
+                <button id="copyExportCodeBtn" class="btn small">⧉ Скопировать код</button>
+              </div>
+              <textarea id="exportCodeArea" readonly rows="5" class="mono" style="font-size:11px"></textarea>
             </div>
-            <textarea id="exportCodeArea" readonly rows="6" class="mono" style="font-size:11px;margin-top:6px"></textarea>
-            <button id="copyExportCodeBtn" class="btn small" style="margin-top:6px">⧉ Скопировать код</button>
-          </div>
+          </details>
         </div>
       </div>
     </div>
