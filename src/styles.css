@@ -238,8 +238,29 @@ select, input[type="text"], textarea {
 }
 #toast.show { transform: none; opacity: 1; }
 
+/* Story Studio */
+.sheet.studio { max-width: 1020px; }
+.studio-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 12px; }
+@media (min-width: 860px) { .studio-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; } }
+.studio-preview { display: flex; flex-direction: column; gap: 6px; align-items: center; min-width: 0; }
+#storyPreview {
+  width: min(100%, 300px); height: auto; aspect-ratio: 9 / 16;
+  border-radius: 14px; border: 1px solid var(--line2);
+  touch-action: none; cursor: grab; background: #000; max-height: 62vh;
+}
+@media (min-width: 860px) { #storyPreview { width: min(100%, 340px); } }
+.studio-controls { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.studio-controls .tpl { text-align: left; }
+.studio-controls .tpl b { font-size: 13px; display: block; }
+.studio-controls .tpl span { font-size: 10px; color: var(--muted); display: block; margin-top: 2px; }
+.studio-toggles { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.studio-toggles label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+#storyStatus.busy { color: var(--amber); }
+#storyStatus.ready { color: #6ee7b7; }
+#storyStatus.error { color: #fda4af; }
+#tgHint { font-size: 11px; }
+
 footer.foot { text-align: center; color: var(--faint); font-size: 11px; padding: 18px 0 30px; }
-canvas#exportCardCanvas { width: 100%; max-width: 300px; height: auto; border-radius: 12px; }
 .timings { font-size: 10px; color: var(--faint); font-family: "JetBrains Mono", monospace; }
 img, canvas, input, select, textarea { max-width: 100%; }
 .brand > div { min-width: 0; }
