@@ -1,0 +1,22 @@
+{
+  "name": "chromastyle",
+  "private": true,
+  "version": "2.0.0",
+  "description": "ChromaStyle — локальный разбор палитры фото и гармоничные сочетания (OKLab/OKLCH, без сервера и ИИ)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "vitest": "^2.1.0",
+    "playwright": "^1.47.0",
+    "@playwright/test": "^1.47.0"
+  }
+}

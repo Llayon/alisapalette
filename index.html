@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0c0a09">
+  <meta name="description" content="ChromaStyle — локальный разбор палитры фотографии и гармоничные сочетания. Всё в браузере, без сервера и регистрации.">
+  <title>ChromaStyle — палитра фото и гармоничные сочетания</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-in">
+      <div class="brand">
+        <div class="logo">✦</div>
+        <div style="min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <h1 class="serif">ChromaStyle</h1>
+            <span class="badge">локально · без сервера</span>
+            <span class="badge green">OKLab · без ИИ</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-top:2px">
+            <span>Бренд блога:</span>
+            <input id="blogHandleInput" type="text" value="@my_lifestyle_blog" style="width:150px;padding:3px 8px;font-size:12px" aria-label="Ник канала">
+          </div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <label for="fileInput" class="btn" style="cursor:pointer">📷 <span>Моё фото</span></label>
+        <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+        <button id="openStoriesModalBtn" class="btn primary">▢ <span>Открытка в Stories</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <!-- Левая колонка: фото → доли → парфюм → товары -->
+      <div class="col">
+        <div class="card o-photo">
+          <div class="rowline">
+            <h2>📸 Фотография</h2>
+            <span class="timings"><span id="imageDimensions">—</span> · <span id="processingTime">—</span></span>
+          </div>
+          <div class="presets" style="margin:10px 0">
+            <span style="font-size:12px;color:var(--muted)">Примеры:</span>
+            <button class="chip" onclick="loadPresetSample('coffee')">☕ Утренний латте</button>
+            <button class="chip" onclick="loadPresetSample('ootd')">🧥 Образ дня (OOTD)</button>
+            <button class="chip" onclick="loadPresetSample('flowers')">🌷 Пионы и пудра</button>
+            <button class="chip" onclick="loadPresetSample('interior')">🕯️ Уютный дом</button>
+            <button class="chip" onclick="loadPresetSample('gray')">⬜ Почти серое</button>
+          </div>
+          <div id="loadError" class="notice" hidden style="border-color:var(--rose);color:#fda4af;margin-bottom:8px"></div>
+          <div class="stage-bar">
+            <span>Сглаживание пипетки:</span>
+            <span class="seg" role="group" aria-label="Размер пипетки">
+              <button data-kernel="1">1×1</button>
+              <button data-kernel="3" class="on">3×3</button>
+              <button data-kernel="5">5×5</button>
+            </span>
+            <label style="display:inline-flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="togglePinsCheckbox" checked> Точки</label>
+            <button id="addCustomPinBtn" class="btn small">＋ Свой пин</button>
+          </div>
+          <div class="stage" id="canvasStage">
+            <div id="canvasWrapper">
+              <canvas id="mainCanvas"></canvas>
+              <div id="pinsLayer"></div>
+            </div>
+          </div>
+          <div class="hoverline"><span class="dot" id="hoverDot"></span><strong id="hoverName">Коснитесь фото</strong><span id="hoverVals">перетаскивайте кружки на детали</span></div>
+          <div class="timings" id="timingsLine" style="margin-top:6px"></div>
+        </div>
+
+        <div class="card o-proportion">
+          <div class="rowline">
+            <h2>✦ Доли цветов в кадре</h2>
+            <span class="verdict" id="stylistVerdictBadge">—</span>
+          </div>
+          <p class="sub">Объективное измерение: каждому пикселю выборки назначен ближайший итоговый цвет. Сумма — ровно 100,0%. Геометрия полосы точная.</p>
+          <div id="proportionBar" class="propbar" style="margin-top:10px"></div>
+          <div id="proportionLegend" class="legend"></div>
+          <div id="rule603010Grid" class="role603010"></div>
+        </div>
+
+        <div class="card o-perfume">
+          <div class="rowline">
+            <div>
+              <h2>🌸 Парфюмерный сомелье</h2>
+              <p class="sub">Перевод гаммы кадра в пирамиду нот (эвристика настроения, не научная оценка).</p>
+            </div>
+            <span style="display:inline-flex;gap:6px;align-items:center;font-size:11px;color:var(--muted)">Промокод <input id="bloggerPromoInput" type="text" value="БЛОГ10" style="width:80px;text-align:center" aria-label="Промокод"></span>
+          </div>
+          <div id="olfactoryHeaderBanner" style="margin-top:10px"></div>
+          <div id="olfactoryPyramidGrid" class="perfgrid" style="margin-top:8px"></div>
+          <div class="notice" style="margin-top:8px">
+            <div class="rowline"><b style="font-size:12px">Дозировка и погода</b>
+              <span style="display:inline-flex;gap:6px;align-items:center">
+                <span id="weatherTempLabel" class="mono" style="color:var(--amber)">+20°C</span>
+                <input id="weatherTempSlider" type="range" min="-15" max="35" value="20" style="width:110px" aria-label="Температура">
+              </span>
+            </div>
+            <div class="seg" style="margin:8px 0" role="group" aria-label="Повод">
+              <button data-occasion="office">Офис</button>
+              <button data-occasion="walk" class="on">Прогулка</button>
+              <button data-occasion="date">Свидание</button>
+              <button data-occasion="party">Вечер</button>
+            </div>
+            <div id="weatherAdviceText" style="font-size:12px"></div>
+          </div>
+          <div id="matchedPerfumesGrid" class="perfgrid" style="margin-top:8px"></div>
+          <canvas id="perfumeRadarCanvas" width="320" height="240" style="max-width:100%;height:auto;margin-top:8px"></canvas>
+        </div>
+
+        <div class="card o-products">
+          <div class="rowline"><h2>👜 Находки из блога в вашей палитре</h2><span class="badge">подбор по OKLab</span></div>
+          <p class="sub">Вещи из обзоров, ближайшие к цветам фото по перцепционному расстоянию в OKLab.</p>
+          <div id="matchedProductsGrid" class="prodgrid" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <!-- Правая колонка: палитра → сочетания → настройки -->
+      <div class="col">
+        <div class="card o-palette">
+          <div class="rowline">
+            <h2>🎨 Палитра кадра</h2>
+            <button id="copyAllHexBtn" class="btn small">⧉ Скопировать палитру</button>
+          </div>
+          <p class="sub">Репрезентативные оттенки — реальные цвета фото (медоиды кластеров), не усреднённая «грязь». Точное значение — HEX; поэтическое имя — подпись.</p>
+          <div id="paletteList" class="pal-list" style="margin-top:10px"></div>
+        </div>
+
+        <div class="card o-harmony">
+          <div class="rowline"><h2>🧭 С чем сочетать</h2><span class="sub">выберите цвет выше</span></div>
+          <div id="harmonyContainer" style="display:flex;flex-direction:column;gap:10px;margin-top:10px"></div>
+        </div>
+
+        <details class="adv card o-settings" open>
+          <summary>⚙️ Режим разбора и точность <span class="explain">— технические настройки</span></summary>
+          <div class="body">
+            <div class="algo-grid" role="group" aria-label="Алгоритм">
+              <button class="algo on" data-algo="photo"><b>Палитра фотографии</b><span>Авторежим: OKLab K-Means + акценты. Рекомендуется.</span></button>
+              <button class="algo" data-algo="kmeans"><b>Баланс кадра</b><span>Классический K-Means в OKLab.</span></button>
+              <button class="algo" data-algo="mediancut"><b>Гардероб OOTD</b><span>Median Cut: делит диапазон цветов пополам. Хорош для тканей.</span></button>
+              <button class="algo" data-algo="histogram"><b>Яркие детали</b><span>Пики гистограммы с бустом насыщенности. Ловит помаду и цветы, чувствителен к шуму.</span></button>
+            </div>
+            <div class="ctrl-grid">
+              <div>
+                <label class="lbl" for="colorCountSlider">Оттенков: <b id="colorCountValue">6</b></label>
+                <input id="colorCountSlider" type="range" min="1" max="12" value="6">
+                <div class="explain">Если различимых цветов меньше — вернём меньше, а не выдумаем лишние.</div>
+              </div>
+              <div>
+                <label class="lbl" for="deltaSlider">Различие оттенков: <b id="deltaValue">28</b></label>
+                <input id="deltaSlider" type="range" min="10" max="70" value="28">
+                <div class="explain">Порог слияния похожих цветов (OKLab-расстояние).</div>
+              </div>
+            </div>
+            <div class="rowline">
+              <label style="font-size:12px;color:var(--muted)">Сортировка
+                <select id="sortSelect" aria-label="Сортировка палитры">
+                  <option value="dominance">По доле в кадре (%)</option>
+                  <option value="luminance">От светлых к тёмным</option>
+                  <option value="hue">По кругу оттенков</option>
+                </select>
+              </label>
+              <span class="seg" role="group" aria-label="Формат кода">
+                <button data-format="hex" class="on">HEX</button>
+                <button data-format="rgb">RGB</button>
+                <button data-format="hsl">HSL</button>
+              </span>
+              <button id="recalculateBtn" class="btn small">↻ Обновить</button>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <div id="exportModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Экспорт открытки">
+    <div class="sheet">
+      <div class="rowline">
+        <div><h2 style="font-size:16px">Открытка для Stories (9:16)</h2><p class="sub">PNG 720×1280 + коды палитры. Фактические цвета кадра.</p></div>
+        <button id="closeExportBtn" class="btn small">✕ Закрыть</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:14px;margin-top:12px" id="exportGrid">
+        <div style="display:flex;justify-content:center"><canvas id="exportCardCanvas"></canvas></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="tpl-grid" role="group" aria-label="Шаблон">
+            <button class="tpl on" data-template="pinterest">Pinterest</button>
+            <button class="tpl" data-template="polaroid">Полароид</button>
+            <button class="tpl" data-template="editorial">Глянец</button>
+            <button class="tpl" data-template="perfume">Аромат дня</button>
+          </div>
+          <div class="ctrl-grid">
+            <label style="font-size:12px">Заголовок<input id="storyTitleInput" type="text" value="Палитра моего дня"></label>
+            <label style="font-size:12px">Подпись блога<input id="storyHandleModalInput" type="text" value="@my_lifestyle_blog"></label>
+          </div>
+          <button id="shareOrDownloadStoryBtn" class="btn primary" style="justify-content:center">Сохранить / Поделиться (PNG 9:16)</button>
+          <div>
+            <div class="rowline"><span style="font-size:11px;color:var(--muted)">Экспорт кодов</span>
+              <span class="seg" role="group" aria-label="Формат экспорта">
+                <button data-code="css" class="on">CSS</button>
+                <button data-code="json">JSON</button>
+                <button data-code="tailwind">Tailwind</button>
+              </span>
+            </div>
+            <textarea id="exportCodeArea" readonly rows="6" class="mono" style="font-size:11px;margin-top:6px"></textarea>
+            <button id="copyExportCodeBtn" class="btn small" style="margin-top:6px">⧉ Скопировать код</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" role="status"><span id="toastSwatch" class="dot"></span><span id="toastText">Скопировано</span></div>
+
+  <footer class="foot wrap">ChromaStyle · палитра и сочетания считаются локально в вашем браузере · перцепционная метрика — евклидово расстояние в OKLab (не CIEDE2000) · поэтические имена — подписи, точные значения — HEX</footer>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
