@@ -41,24 +41,24 @@ describe('однотонные изображения', () => {
 });
 
 describe('доли', () => {
-  it('50/50: два цвета ~50/50', () => {
+  it('50/50: два цвета ~50/50 (допуск ±1.5 — чистые области, аудит 1b)', () => {
     const items = analyzePixels(splitPixels({ r: 200, g: 40, b: 40 }, { r: 40, g: 80, b: 200 }, 0.5), { algorithm: 'photo', colorCount: 6, minDelta: 28 });
     expect(items.length).toBe(2);
-    expect(items[0].percentage).toBeGreaterThan(44);
-    expect(items[0].percentage).toBeLessThan(56);
-    expect(items[1].percentage).toBeGreaterThan(44);
+    expect(items[0].percentage).toBeGreaterThan(48.5);
+    expect(items[0].percentage).toBeLessThan(51.5);
+    expect(items[1].percentage).toBeGreaterThan(48.5);
     checkSums(items);
   });
-  it('60/30/10: три цвета в допусках', () => {
+  it('60/30/10: три цвета в допусках ±2 (аудит 1b)', () => {
     const items = analyzePixels(
       threeWayPixels([{ r: 220, g: 210, b: 190 }, { r: 70, g: 110, b: 150 }, { r: 150, g: 30, b: 40 }], [0.6, 0.3, 0.1]),
       { algorithm: 'photo', colorCount: 6, minDelta: 28 }
     );
     expect(items.length).toBe(3);
     const pcts = items.map((i) => i.percentage).sort((a, b) => b - a);
-    expect(pcts[0]).toBeGreaterThan(52); expect(pcts[0]).toBeLessThan(68);
-    expect(pcts[1]).toBeGreaterThan(23); expect(pcts[1]).toBeLessThan(37);
-    expect(pcts[2]).toBeGreaterThan(5); expect(pcts[2]).toBeLessThan(16);
+    expect(pcts[0]).toBeGreaterThan(58); expect(pcts[0]).toBeLessThan(62);
+    expect(pcts[1]).toBeGreaterThan(28); expect(pcts[1]).toBeLessThan(32);
+    expect(pcts[2]).toBeGreaterThan(8); expect(pcts[2]).toBeLessThan(12);
     checkSums(items);
   });
   it('четыре области: 4 цвета', () => {

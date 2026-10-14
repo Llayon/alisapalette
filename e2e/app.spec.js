@@ -101,6 +101,17 @@ test('загрузка, палитра, гармонии, сортировка, 
   expect(errors.filter((e) => !e.includes('fonts.g')).join('\n')).toBe('');
 });
 
+test('некорректный файл показывает понятную ошибку', async ({ page }) => {
+  await page.goto('./', { waitUntil: 'networkidle' });
+  await countGt0(page.locator('#paletteList .pal-card'));
+  await page.locator('#fileInput').setInputFiles({
+    name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('not an image')
+  });
+  await expect(page.locator('#loadError')).toBeVisible();
+  // Палитра не destroyed ошибкой
+  await countGt0(page.locator('#paletteList .pal-card'), 5000);
+});
+
 test('переключение алгоритмов не ломает UI', async ({ page }) => {
   await page.goto('./', { waitUntil: 'networkidle' });
   await countGt0(page.locator('#paletteList .pal-card'));
