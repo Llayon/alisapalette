@@ -1,5 +1,7 @@
 # ChromaStyle 2.0 — палитра фото и гармоничные сочетания
 
+🌐 **Работающий сайт: https://llayon.github.io/alisapalette/**
+
 Локальный инструмент разбора цветовой палитры фотографии и подбора сочетаний.
 Всё считается в браузере: без сервера, регистрации, платных API и нейросетей.
 Цветовой движок — перцепционные пространства **OKLab / OKLCH**
@@ -27,8 +29,15 @@ npx playwright test   # E2E: 360×800, 390×844, 430×932, 1280×800
 
 ## Деплой на GitHub Pages
 
-1. `npm run build`, задеплойте содержимое `dist/` (или настройте Actions с `npm ci && npm run build`).
-2. В `vite.config.js` уже стоит `base: './'` — пути относительные, подпапка репозитория поддерживается.
+Автоматический: push в `main` запускает `.github/workflows/deploy.yml`
+(`npm ci` → `npm test` → `npm run build` → публикация `dist/`).
+Источник Pages — **GitHub Actions** (build_type `workflow`).
+
+Статус публикации: вкладка **Actions** репозитория
+(`gh run list`, `gh run watch RUN_ID --exit-status`).
+
+В `vite.config.js` стоит `base: './'` — пути относительные, подпапка
+репозитория (`/alisapalette/`) поддерживается.
 
 ## Архитектура (`src/`)
 
