@@ -1,0 +1,3038 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ChromaStyle — Карманный стилист и Парфюмерный сомелье (Telegram Mini App)</title>
+    <!-- Telegram Mini App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter, Cormorant Garamond for lifestyle editorial vibe, JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Cormorant Garamond', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        surface: {
+                            800: '#1c1917',
+                            850: '#141210',
+                            900: '#0c0a09',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0c0a09;
+            color: #f5f5f4;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom range slider with warm rose-gold accent */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #292524;
+            height: 6px;
+            border-radius: 999px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -5px;
+            background-color: #f43f5e;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background-color: #fb7185;
+        }
+        /* Subtle checkerboard pattern */
+        .checkerboard {
+            background-image: 
+                linear-gradient(45deg, #1c1917 25%, transparent 25%), 
+                linear-gradient(-45deg, #1c1917 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #1c1917 75%), 
+                linear-gradient(-45deg, transparent 75%, #1c1917 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        /* Pin markers on photo */
+        .color-pin {
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease, box-shadow 0.15s ease;
+            touch-action: none;
+        }
+        .color-pin:hover, .color-pin.active-pin {
+            transform: translate(-50%, -50%) scale(1.28);
+            z-index: 40 !important;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #141210;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #292524;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #44403c;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col font-sans antialiased selection:bg-rose-500 selection:text-white">
+
+    <!-- Top Navigation Header (Telegram Mini App Style) -->
+    <header class="border-b border-stone-800/80 bg-stone-950/85 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 via-amber-400 to-orange-300 p-0.5 shadow-lg shadow-rose-500/20 shrink-0">
+                    <div class="w-full h-full bg-stone-950 rounded-[14px] flex items-center justify-center">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-rose-400"></i>
+                    </div>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-serif font-bold text-xl tracking-wide text-white truncate">ChromaStyle</h1>
+                        <span class="px-2 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider bg-rose-500/15 text-rose-300 border border-rose-500/30 rounded-full shrink-0">
+                            Telegram Mini App
+                        </span>
+                        <span class="hidden md:inline-block px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full shrink-0">
+                            100% Без ИИ • 0 ₽ сервер
+                        </span>
+                    </div>
+                    <!-- Editable Blogger Channel Handle -->
+                    <div class="flex items-center gap-1.5 text-xs text-stone-400 mt-0.5">
+                        <span class="hidden sm:inline">Бренд блога:</span>
+                        <div class="inline-flex items-center gap-1 bg-stone-900 border border-stone-800 rounded-md px-1.5 py-0.5">
+                            <i data-lucide="send" class="w-3 h-3 text-rose-400"></i>
+                            <input id="blogHandleInput" type="text" value="@my_lifestyle_blog" 
+                                   class="bg-transparent text-stone-200 font-medium text-xs focus:outline-none w-32 sm:w-36"
+                                   title="Введите ник канала жены — он появится на открытках для Stories">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2 shrink-0">
+                <label for="fileInput" class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-100 border border-stone-700 font-medium text-xs sm:text-sm transition">
+                    <i data-lucide="camera" class="w-4 h-4 text-rose-400"></i>
+                    <span>Моё фото</span>
+                </label>
+                <input id="fileInput" type="file" accept="image/*" class="hidden">
+
+                <button id="openStoriesModalBtn" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-rose-500/25 transition">
+                    <i data-lucide="smartphone" class="w-4 h-4"></i>
+                    <span>Открытка в Stories</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- Left Column: Interactive Photo Canvas, 60-30-10 Rule, Perfume Sommelier & Blogger's Showcase (7 cols) -->
+            <div class="lg:col-span-7 flex flex-col gap-5">
+                
+                <!-- Lifestyle Preset Scenes Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-2.5 bg-stone-900/90 border border-stone-800/80 rounded-2xl p-3">
+                    <div class="flex items-center gap-2 text-xs text-stone-400">
+                        <i data-lucide="heart" class="w-4 h-4 text-rose-400 shrink-0"></i>
+                        <span>Примеры кадров из блога:</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <button onclick="loadPresetSample('coffee')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 transition">☕ Утренний латте</button>
+                        <button onclick="loadPresetSample('ootd')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 transition">🧥 Образ дня (OOTD)</button>
+                        <button onclick="loadPresetSample('flowers')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 transition">🌷 Пионы и пудра</button>
+                        <button onclick="loadPresetSample('interior')" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 transition">🕯️ Уютный дом</button>
+                    </div>
+                </div>
+
+                <!-- Main Image Viewport Card -->
+                <div id="dropZone" class="relative bg-stone-900 border-2 border-dashed border-stone-800 hover:border-stone-700 rounded-2xl overflow-hidden transition-colors flex flex-col">
+                    
+                    <!-- Top Canvas Toolbar -->
+                    <div class="px-4 py-2.5 bg-stone-900/95 border-b border-stone-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-2.5">
+                            <span id="imageDimensions" class="font-mono text-stone-400">800 × 600 px</span>
+                            <span class="text-stone-700">•</span>
+                            <span id="processingTime" class="font-mono text-emerald-400">8 мс</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <!-- Pipette Kernel Size Selector (Noise Smoothing) -->
+                            <div class="flex items-center gap-1.5" title="Сглаживание шума камеры: 3×3 или 5×5 идеально для селфи и одежды">
+                                <span class="text-stone-400 hidden sm:inline">Сглаживание пипетки:</span>
+                                <div class="flex items-center bg-stone-800 p-0.5 rounded-lg border border-stone-700/80">
+                                    <button data-kernel="1" class="kernel-btn px-2 py-0.5 rounded-md text-stone-400 hover:text-white font-mono text-[11px] font-medium transition">1×1</button>
+                                    <button data-kernel="3" class="kernel-btn px-2 py-0.5 rounded-md bg-rose-500 text-white font-mono text-[11px] font-medium transition">3×3</button>
+                                    <button data-kernel="5" class="kernel-btn px-2 py-0.5 rounded-md text-stone-400 hover:text-white font-mono text-[11px] font-medium transition">5×5</button>
+                                </div>
+                            </div>
+
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-stone-300 hover:text-white">
+                                <input type="checkbox" id="togglePinsCheckbox" checked class="rounded bg-stone-800 border-stone-700 text-rose-500 focus:ring-0">
+                                <span>Точки</span>
+                            </label>
+                            <button id="addCustomPinBtn" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition" title="Добавить свою точку на фото">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                                <span>Свой пин</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Stage -->
+                    <div id="canvasStage" class="relative w-full min-h-[320px] sm:min-h-[420px] max-h-[560px] checkerboard flex items-center justify-center p-4 select-none overflow-hidden">
+                        <div id="canvasWrapper" class="relative inline-block shadow-2xl rounded-xl overflow-hidden">
+                            <canvas id="mainCanvas" class="block max-w-full max-h-[500px] w-auto h-auto rounded-xl cursor-crosshair"></canvas>
+                            <!-- Interactive Pins Overlay Layer -->
+                            <div id="pinsLayer" class="absolute inset-0 pointer-events-none"></div>
+                        </div>
+
+                        <!-- Magnifying Pixel Loupe (Floating) -->
+                        <div id="pixelLoupe" class="hidden pointer-events-none absolute z-50 w-32 h-32 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-stone-950">
+                            <canvas id="loupeCanvas" width="128" height="128" class="w-full h-full block"></canvas>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div id="loupeReticle" class="border border-white/95 bg-white/10 shadow-sm transition-all duration-150" style="width: 26px; height: 26px;"></div>
+                            </div>
+                            <div id="loupeHexBadge" class="absolute bottom-2 inset-x-0 mx-auto w-max px-2 py-0.5 rounded bg-black/80 text-[10px] font-sans font-semibold text-white">
+                                Пыльная роза
+                            </div>
+                        </div>
+
+                        <!-- Drag & Drop Overlay Prompt -->
+                        <div id="dropOverlay" class="hidden absolute inset-0 bg-rose-950/85 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3 text-center p-6">
+                            <div class="w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center text-rose-300">
+                                <i data-lucide="image-plus" class="w-8 h-8"></i>
+                            </div>
+                            <p class="text-lg font-semibold text-white">Отпустите фото для разбора палитры и аромата</p>
+                            <p class="text-xs text-rose-200">Фотографии обрабатываются прямо на вашем телефоне и никуда не отправляются</p>
+                        </div>
+                    </div>
+
+                    <!-- Live Hover Pixel Status Footer -->
+                    <div class="px-4 py-2.5 bg-stone-900 border-t border-stone-800 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-400">
+                        <div class="flex items-center gap-2">
+                            <div id="hoverColorPreview" class="w-4 h-4 rounded-full border border-white/20 bg-stone-700"></div>
+                            <strong id="hoverColorCoords" class="text-stone-200">Наведите или коснитесь фото</strong>
+                            <span id="hoverColorValues" class="font-mono text-stone-400 ml-1">Перетаскивайте кружки на нужные детали одежды</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stylist Rule 60-30-10 & Proportional Color Distribution -->
+                <div class="bg-stone-900 border border-stone-800/80 rounded-2xl p-4 flex flex-col gap-3.5">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+                            <h2 class="text-sm font-semibold text-stone-100">Баланс образа по правилу стилистов «60–30–10»</h2>
+                        </div>
+                        <span id="stylistVerdictBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                            Гармоничный баланс
+                        </span>
+                    </div>
+
+                    <!-- Multi-segment Bar -->
+                    <div id="proportionBar" class="w-full h-9 rounded-xl overflow-hidden flex border border-stone-800 shadow-inner"></div>
+
+                    <!-- 60-30-10 Breakdown Cards -->
+                    <div id="rule603010Grid" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Olfactory Synesthesia: Perfume Pyramid, Weather Dosage & Matched Fragrances -->
+                <div class="bg-gradient-to-br from-stone-900 via-stone-900 to-amber-950/25 border border-stone-800/90 rounded-2xl p-5 flex flex-col gap-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-800/80 pb-3">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i>
+                                <h2 class="text-sm font-semibold text-white">Парфюмерный сомелье: Аромат вашего образа</h2>
+                                <span class="px-2 py-0.5 text-[10px] font-mono bg-amber-500/15 text-amber-300 rounded-full border border-amber-500/30">Синэстезия + Векторы</span>
+                            </div>
+                            <p class="text-xs text-stone-400 mt-0.5">Математический перевод цветовой гаммы (60–30–10) в пирамиду нот и реальные духи</p>
+                        </div>
+                        <!-- Blogger Promo Code Input -->
+                        <div class="flex items-center gap-1.5 bg-stone-950/90 border border-stone-800 rounded-xl px-2.5 py-1">
+                            <span class="text-[11px] text-stone-400">Промокод (-10%):</span>
+                            <input id="bloggerPromoInput" type="text" value="БЛОГ10" 
+                                   class="bg-transparent text-amber-300 font-mono font-bold text-xs focus:outline-none w-16 text-center"
+                                   title="Именной промокод блогера для Randewoo / Золотого Яблока">
+                        </div>
+                    </div>
+
+                    <!-- Signature Scent Name & Olfactory Family Verdict -->
+                    <div id="olfactoryHeaderBanner" class="bg-stone-950/75 border border-stone-800/90 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3">
+                        <!-- Populated via JS -->
+                    </div>
+
+                    <!-- 3-Tier Fragrance Pyramid (Top 10%, Heart 30%, Base 60%) -->
+                    <div id="olfactoryPyramidGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <!-- Populated via JS -->
+                    </div>
+
+                    <!-- Weather Volatility & Spray Dosage Calculator -->
+                    <div class="bg-stone-950/60 border border-stone-800/80 rounded-xl p-3.5 flex flex-col gap-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-1.5 text-xs font-semibold text-stone-200">
+                                <i data-lucide="cloud-sun" class="w-4 h-4 text-amber-400"></i>
+                                <span>Погодный индекс шлейфа и калькулятор дозировки</span>
+                            </div>
+                            <span id="dosageVerdictPill" class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                                2–3 распыления
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                            <!-- Temperature Slider -->
+                            <div class="sm:col-span-6 flex flex-col gap-1">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-stone-400">Температура воздуха:</span>
+                                    <span id="weatherTempLabel" class="font-mono font-bold text-amber-300">+20°C</span>
+                                </div>
+                                <input id="weatherTempSlider" type="range" min="-15" max="35" value="20">
+                                <div class="flex justify-between text-[10px] text-stone-500 font-mono">
+                                    <span>-15°C (Мороз)</span>
+                                    <span>+15°C</span>
+                                    <span>+35°C (Жара)</span>
+                                </div>
+                            </div>
+
+                            <!-- Occasion Selector -->
+                            <div class="sm:col-span-6 flex flex-col gap-1">
+                                <span class="text-xs text-stone-400">Куда идём (контекст):</span>
+                                <div class="grid grid-cols-4 gap-1 bg-stone-900 p-1 rounded-xl border border-stone-800">
+                                    <button data-occasion="office" class="occasion-btn px-2 py-1 rounded-lg text-[11px] font-medium text-stone-400 hover:text-white transition">Офис</button>
+                                    <button data-occasion="walk" class="occasion-btn px-2 py-1 rounded-lg bg-rose-500 text-white text-[11px] font-medium transition">Прогулка</button>
+                                    <button data-occasion="date" class="occasion-btn px-2 py-1 rounded-lg text-[11px] font-medium text-stone-400 hover:text-white transition">Свидание</button>
+                                    <button data-occasion="party" class="occasion-btn px-2 py-1 rounded-lg text-[11px] font-medium text-stone-400 hover:text-white transition">Вечер</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="weatherAdviceText" class="text-xs text-stone-300 bg-stone-900/90 border border-stone-800/80 rounded-lg px-3 py-2 leading-relaxed">
+                            <!-- Populated dynamically via volatility math -->
+                        </div>
+                    </div>
+
+                    <!-- Top 3 Matched Real Perfumes from Catalog -->
+                    <div class="flex flex-col gap-2.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-semibold text-stone-200 uppercase tracking-wider text-[11px]">Рекомендованные парфюмы по вектору кадра:</span>
+                            <span class="text-stone-400 text-[11px]">Нажмите, чтобы скопировать промокод и аромат</span>
+                        </div>
+                        <div id="matchedPerfumesGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <!-- Populated via cosine similarity & ΔE -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Blogger's Curated Finds Showcase (Monetization & Affiliate Engine) -->
+                <div class="bg-gradient-to-br from-stone-900 via-stone-900 to-rose-950/30 border border-stone-800/90 rounded-2xl p-5 flex flex-col gap-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="shopping-bag" class="w-4 h-4 text-rose-400"></i>
+                                <h2 class="text-sm font-semibold text-white">Находки из блога в вашей палитре</h2>
+                                <span class="px-2 py-0.5 text-[10px] font-mono bg-rose-500/15 text-rose-300 rounded-full border border-rose-500/30">Подбор по ΔE</span>
+                            </div>
+                            <p class="text-xs text-stone-400 mt-0.5">Вещи и косметика из обзоров блогера, которые математически подходят к цветам вашего фото</p>
+                        </div>
+                        <button id="toggleAddProductBtn" class="text-xs text-rose-300 hover:text-rose-200 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-stone-800/90 border border-stone-700 transition">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Добавить товар блогера</span>
+                        </button>
+                    </div>
+
+                    <!-- Collapsible Form for Blogger to test adding their own WB/Lamoda item -->
+                    <div id="addProductForm" class="hidden bg-stone-950/80 border border-stone-800 rounded-xl p-3.5 grid grid-cols-1 sm:grid-cols-5 gap-2.5 items-end text-xs">
+                        <div class="sm:col-span-2">
+                            <label class="text-stone-400 block mb-1">Название находки</label>
+                            <input id="newProdTitle" type="text" placeholder="Кашемировый свитер" class="w-full bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-rose-500">
+                        </div>
+                        <div>
+                            <label class="text-stone-400 block mb-1">Магазин и Арт.</label>
+                            <input id="newProdSku" type="text" placeholder="WB 19482014" class="w-full bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-rose-500">
+                        </div>
+                        <div>
+                            <label class="text-stone-400 block mb-1">Цвет вещи</label>
+                            <div class="flex items-center gap-1.5">
+                                <input id="newProdColor" type="color" value="#d8a7a7" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0">
+                                <span class="text-[11px] text-stone-400">или из фото</span>
+                            </div>
+                        </div>
+                        <button id="saveNewProductBtn" class="w-full py-2 px-3 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-semibold transition">
+                            В витрину
+                        </button>
+                    </div>
+
+                    <!-- Matched Products Grid -->
+                    <div id="matchedProductsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Dynamically populated via ΔE matching -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Lifestyle Controls, Extracted Poetic Palette, Color Harmony & Perfume DNA Radar (5 cols) -->
+            <div class="lg:col-span-5 flex flex-col gap-5">
+
+                <!-- Lifestyle Analysis Mode Card -->
+                <div class="bg-stone-900 border border-stone-800/80 rounded-2xl p-5 flex flex-col gap-4">
+                    <div class="flex items-center justify-between border-b border-stone-800 pb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="wand-2" class="w-4 h-4 text-rose-400"></i>
+                            <h2 class="font-semibold text-sm text-white">Режим разбора фотографии</h2>
+                        </div>
+                        <button id="recalculateBtn" class="text-xs text-rose-400 hover:text-rose-300 inline-flex items-center gap-1 font-medium transition">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                            <span>Обновить</span>
+                        </button>
+                    </div>
+
+                    <!-- Lifestyle-translated Algorithm Selector -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button data-algo="kmeans" class="algo-btn active-algo text-left p-2.5 rounded-xl border border-rose-500 bg-rose-500/10 transition flex flex-col justify-between">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold text-white">Баланс кадра</span>
+                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-rose-400"></i>
+                            </div>
+                            <span class="text-[11px] text-stone-400 mt-1 leading-tight">Основные тона и атмосфера (K-Means)</span>
+                        </button>
+
+                        <button data-algo="mediancut" class="algo-btn text-left p-2.5 rounded-xl border border-stone-800 bg-stone-800/40 hover:bg-stone-800 transition flex flex-col justify-between">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold text-stone-200">Гардероб OOTD</span>
+                                <i data-lucide="shirt" class="w-3.5 h-3.5 text-stone-500"></i>
+                            </div>
+                            <span class="text-[11px] text-stone-400 mt-1 leading-tight">Разделение тканей и базы (Median Cut)</span>
+                        </button>
+
+                        <button data-algo="histogram" class="algo-btn text-left p-2.5 rounded-xl border border-stone-800 bg-stone-800/40 hover:bg-stone-800 transition flex flex-col justify-between">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold text-stone-200">Яркие детали</span>
+                                <i data-lucide="gem" class="w-3.5 h-3.5 text-stone-500"></i>
+                            </div>
+                            <span class="text-[11px] text-stone-400 mt-1 leading-tight">Помада, цветы и акценты (Пики)</span>
+                        </button>
+                    </div>
+
+                    <!-- Sliders Row -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                        <div class="flex flex-col gap-1.5">
+                            <div class="flex justify-between text-xs">
+                                <label for="colorCountSlider" class="text-stone-300 font-medium">Оттенков в палитре:</label>
+                                <span id="colorCountValue" class="font-mono font-bold text-rose-400">6</span>
+                            </div>
+                            <input id="colorCountSlider" type="range" min="4" max="12" value="6">
+                            <div class="flex justify-between text-[10px] text-stone-500 font-mono">
+                                <span>4 (Минимализм)</span>
+                                <span>6 (Сторис)</span>
+                                <span>12 (Полный)</span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <div class="flex justify-between text-xs">
+                                <label for="deltaSlider" class="text-stone-300 font-medium">Контрастность оттенков:</label>
+                                <span id="deltaValue" class="font-mono font-bold text-rose-400">28</span>
+                            </div>
+                            <input id="deltaSlider" type="range" min="10" max="70" value="28">
+                            <div class="flex justify-between text-[10px] text-stone-500 font-mono">
+                                <span>Нежные переходы</span>
+                                <span>Разные цвета</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sorting & Format Options -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-800/80 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="text-stone-400">Сортировка:</span>
+                            <select id="sortSelect" class="bg-stone-800 border border-stone-700 text-stone-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-rose-500">
+                                <option value="dominance">По доле в образе (%)</option>
+                                <option value="luminance">От светлых к тёмным</option>
+                                <option value="hue">По радуге оттенков</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-1 bg-stone-800 p-0.5 rounded-lg border border-stone-700/80">
+                            <button data-format="hex" class="format-btn px-2 py-0.5 rounded-md bg-rose-500 text-white font-mono text-[11px] font-medium transition">HEX</button>
+                            <button data-format="rgb" class="format-btn px-2 py-0.5 rounded-md text-stone-400 hover:text-white font-mono text-[11px] font-medium transition">RGB</button>
+                            <button data-format="hsl" class="format-btn px-2 py-0.5 rounded-md text-stone-400 hover:text-white font-mono text-[11px] font-medium transition">HSL</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Extracted Poetic Palette List Card -->
+                <div class="bg-stone-900 border border-stone-800/80 rounded-2xl p-5 flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="palette" class="w-4 h-4 text-rose-400"></i>
+                            <h2 class="font-semibold text-sm text-white">Эстетичная палитра вашего кадра</h2>
+                        </div>
+                        <button id="copyAllHexBtn" class="text-xs text-stone-300 hover:text-white inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 transition">
+                            <i data-lucide="copy" class="w-3.5 h-3.5 text-rose-400"></i>
+                            <span>Скопировать палитру</span>
+                        </button>
+                    </div>
+
+                    <!-- Swatches Container -->
+                    <div id="paletteList" class="grid grid-cols-1 gap-2.5 max-h-[420px] overflow-y-auto pr-1">
+                        <!-- Dynamically populated via JS -->
+                    </div>
+                </div>
+
+                <!-- Color Harmony Companion ("С чем сочетать этот цвет") -->
+                <div class="bg-stone-900 border border-stone-800/80 rounded-2xl p-5 flex flex-col gap-3.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="compass" class="w-4 h-4 text-amber-400"></i>
+                            <h2 class="font-semibold text-sm text-white">С чем сочетать в одежде и интерьере</h2>
+                        </div>
+                        <span class="text-[11px] text-stone-400">Нажмите на цвет выше</span>
+                    </div>
+
+                    <div id="harmonyContainer" class="flex flex-col gap-3">
+                        <!-- Dynamically populated mathematical HSL harmony companions -->
+                    </div>
+                </div>
+
+                <!-- Fragrance DNA Radar Chart (6-Axis Vector Sommelier) & Layering Calculator -->
+                <div class="bg-stone-900 border border-stone-800/80 rounded-2xl p-5 flex flex-col gap-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="radar" class="w-4 h-4 text-rose-400"></i>
+                            <h2 class="font-semibold text-sm text-white">Парфюмерный ДНК кадра и Наслаивание</h2>
+                        </div>
+                        <span id="dominantAccordBadge" class="px-2 py-0.5 text-[10px] font-mono bg-rose-500/15 text-rose-300 rounded-full border border-rose-500/30">
+                            6 осей аккордов
+                        </span>
+                    </div>
+
+                    <div class="bg-stone-950/80 border border-stone-800/80 rounded-xl p-3 flex flex-col items-center justify-center">
+                        <canvas id="perfumeRadarCanvas" width="320" height="240" class="max-w-full h-auto"></canvas>
+                    </div>
+
+                    <!-- Layering Alchemy Suggestion -->
+                    <div id="layeringSuggestionBox" class="bg-stone-950/75 border border-stone-800/90 rounded-xl p-3 flex flex-col gap-1.5 text-xs">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Stories 9:16 & Export Studio Modal -->
+    <div id="exportModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-stone-900 border border-stone-800 rounded-3xl max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+            <!-- Modal Header -->
+            <div class="px-5 py-4 border-b border-stone-800 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                        <i data-lucide="instagram" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-sm sm:text-base">Генератор вирусных открыток для Stories (9:16)</h3>
+                        <p class="text-[11px] text-stone-400">Подписчица сохраняет красивую палитру или пирамиду аромата с подписью вашего блога</p>
+                    </div>
+                </div>
+                <button id="closeExportBtn" class="p-1.5 rounded-xl text-stone-400 hover:text-white hover:bg-stone-800 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-5 overflow-y-auto grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                <!-- Left: 9:16 Vertical Card Preview (6 cols) -->
+                <div class="md:col-span-6 flex flex-col items-center gap-3">
+                    <div class="bg-stone-950 border border-stone-800 rounded-2xl p-3 flex items-center justify-center w-full max-w-[310px] mx-auto shadow-inner">
+                        <canvas id="exportCardCanvas" class="w-full h-auto rounded-xl shadow-2xl"></canvas>
+                    </div>
+                </div>
+
+                <!-- Right: Template Customization & Share / Pro Code (6 cols) -->
+                <div class="md:col-span-6 flex flex-col gap-4">
+                    <!-- Style Template Selector -->
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-wider text-stone-400 block mb-2">1. Выберите стиль открытки 9:16</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <button data-template="pinterest" class="story-tpl-btn px-2.5 py-2.5 rounded-xl border border-rose-500 bg-rose-500/15 text-white text-xs font-medium flex flex-col items-center gap-1 transition">
+                                <i data-lucide="layout-template" class="w-4 h-4 text-rose-400"></i>
+                                <span>Pinterest</span>
+                            </button>
+                            <button data-template="polaroid" class="story-tpl-btn px-2.5 py-2.5 rounded-xl border border-stone-800 bg-stone-800/60 hover:bg-stone-800 text-stone-300 text-xs font-medium flex flex-col items-center gap-1 transition">
+                                <i data-lucide="image" class="w-4 h-4 text-amber-400"></i>
+                                <span>Полароид</span>
+                            </button>
+                            <button data-template="editorial" class="story-tpl-btn px-2.5 py-2.5 rounded-xl border border-stone-800 bg-stone-800/60 hover:bg-stone-800 text-stone-300 text-xs font-medium flex flex-col items-center gap-1 transition">
+                                <i data-lucide="sparkles" class="w-4 h-4 text-purple-400"></i>
+                                <span>Глянец</span>
+                            </button>
+                            <button data-template="perfume" class="story-tpl-btn px-2.5 py-2.5 rounded-xl border border-stone-800 bg-stone-800/60 hover:bg-stone-800 text-stone-300 text-xs font-medium flex flex-col items-center gap-1 transition">
+                                <i data-lucide="flame" class="w-4 h-4 text-rose-400"></i>
+                                <span>Аромат дня</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Texts for the Story Card -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs text-stone-400 block mb-1">Заголовок открытки</label>
+                            <input id="storyTitleInput" type="text" value="Палитра моего дня ✨" 
+                                   class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+                        </div>
+                        <div>
+                            <label class="text-xs text-stone-400 block mb-1">Подпись Telegram-блога</label>
+                            <input id="storyHandleModalInput" type="text" value="@my_lifestyle_blog" 
+                                   class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs text-rose-300 font-medium focus:outline-none focus:border-rose-500">
+                        </div>
+                    </div>
+
+                    <!-- Download & Mobile Share Buttons -->
+                    <div class="flex flex-col gap-2.5 pt-1">
+                        <button id="shareOrDownloadStoryBtn" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-rose-500/25 transition">
+                            <i data-lucide="share" class="w-4 h-4"></i>
+                            <span>Сохранить / Поделиться в Stories (PNG 9:16)</span>
+                        </button>
+                    </div>
+
+                    <!-- Developer / Designer Code Accordion -->
+                    <div class="border-t border-stone-800 pt-4 mt-1 flex flex-col gap-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-stone-400">Экспорт кодов (CSS / JSON / Tailwind)</span>
+                            <div class="flex gap-1 bg-stone-800 p-0.5 rounded-lg">
+                                <button data-code="css" class="code-tab-btn px-2 py-0.5 rounded-md bg-rose-500 text-white text-[11px] font-medium">CSS</button>
+                                <button data-code="json" class="code-tab-btn px-2 py-0.5 rounded-md text-stone-400 hover:text-white text-[11px] font-medium">JSON</button>
+                                <button data-code="tailwind" class="code-tab-btn px-2 py-0.5 rounded-md text-stone-400 hover:text-white text-[11px] font-medium">Tailwind</button>
+                            </div>
+                        </div>
+                        <textarea id="exportCodeArea" readonly class="w-full h-28 bg-stone-950 border border-stone-800 rounded-xl p-3 font-mono text-[11px] text-stone-300 focus:outline-none resize-none"></textarea>
+                        <button id="copyExportCodeBtn" class="w-full py-2 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-medium text-xs flex items-center justify-center gap-2 border border-stone-700 transition">
+                            <i data-lucide="copy" class="w-3.5 h-3.5 text-rose-400"></i>
+                            <span>Скопировать код палитры</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-200 bg-stone-900 border border-stone-700 text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2.5 text-sm">
+        <span id="toastSwatch" class="w-4 h-4 rounded-full border border-white/20 shrink-0"></span>
+        <span id="toastText" class="font-medium">Скопировано!</span>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Safe Telegram WebApp Integration & Haptic Feedback helper
+        const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+        if (tg) {
+            try {
+                tg.ready();
+                tg.expand();
+            } catch (e) {}
+        }
+
+        function triggerHaptic(type = 'light') {
+            try {
+                if (tg && tg.HapticFeedback) {
+                    if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
+                    else tg.HapticFeedback.impactOccurred(type);
+                } else if (navigator.vibrate) {
+                    navigator.vibrate(type === 'success' ? [12, 30, 12] : 8);
+                }
+            } catch (e) {}
+        }
+
+        /**
+         * Curated Mathematical Dictionary of 68 Poetic Lifestyle Shades (Russian)
+         * Matched deterministically via weighted Euclidean Delta-E distance
+         */
+        const POETIC_COLORS = [
+            // Whites, Creams & Milks
+            { name: 'Топлёное молоко', r: 248, g: 241, b: 229 },
+            { name: 'Шёлковый жемчуг', r: 245, g: 245, b: 247 },
+            { name: 'Взбитые сливки', r: 252, g: 248, b: 242 },
+            { name: 'Сливочное масло', r: 253, g: 238, b: 196 },
+            { name: 'Льняной холст', r: 234, g: 224, b: 210 },
+            { name: 'Миндальное молоко', r: 238, g: 223, b: 208 },
+            { name: 'Ванильный пломбир', r: 249, g: 239, b: 218 },
+            // Beiges, Cashmere & Coffees
+            { name: 'Кашемировый беж', r: 216, g: 198, b: 180 },
+            { name: 'Овсяное печенье', r: 204, g: 181, b: 155 },
+            { name: 'Тёплый тренч', r: 189, g: 162, b: 133 },
+            { name: 'Пряный латте', r: 175, g: 138, b: 108 },
+            { name: 'Солёная карамель', r: 198, g: 134, b: 78 },
+            { name: 'Корица и кардамон', r: 156, g: 98, b: 62 },
+            { name: 'Молочный шоколад', r: 118, g: 78, b: 56 },
+            { name: 'Утренний эспрессо', r: 62, g: 41, b: 32 },
+            { name: 'Горький трюфель', r: 42, g: 30, b: 26 },
+            // Pinks, Blushes & Berries
+            { name: 'Балетная пудра', r: 244, g: 219, b: 216 },
+            { name: 'Розовый кварц', r: 236, g: 196, b: 199 },
+            { name: 'Лепесток пиона', r: 232, g: 165, b: 178 },
+            { name: 'Пыльная роза', r: 196, g: 138, b: 145 },
+            { name: 'Сухая роза', r: 168, g: 108, b: 116 },
+            { name: 'Клубничный мусс', r: 238, g: 132, b: 148 },
+            { name: 'Малиновый сорбет', r: 212, g: 62, b: 98 },
+            { name: 'Спелая вишня', r: 138, g: 28, b: 48 },
+            { name: 'Винный бархат (Бургунди)', r: 98, g: 22, b: 38 },
+            { name: 'Гранатовый сок', r: 165, g: 32, b: 42 },
+            // Peaches, Terracottas & Warmth
+            { name: 'Персиковый румянец', r: 248, g: 196, b: 172 },
+            { name: 'Абрикосовый джем', r: 242, g: 155, b: 104 },
+            { name: 'Тосканская терракота', r: 194, g: 98, b: 72 },
+            { name: 'Обожжённая глина', r: 162, g: 78, b: 56 },
+            { name: 'Алый шёлк', r: 218, g: 44, b: 44 },
+            { name: 'Янтарный мёд', r: 235, g: 168, b: 52 },
+            { name: 'Золотое шампанское', r: 238, g: 212, b: 158 },
+            { name: 'Пряная охра', r: 198, g: 142, b: 48 },
+            { name: 'Солнечный лимон', r: 248, g: 218, b: 78 },
+            // Greens: Matcha, Sage, Olive, Emerald
+            { name: 'Фисташковое мороженое', r: 204, g: 224, b: 188 },
+            { name: 'Матча латте', r: 168, g: 192, b: 138 },
+            { name: 'Шалфей и эвкалипт', r: 142, g: 165, b: 146 },
+            { name: 'Средиземноморская олива', r: 118, g: 128, b: 78 },
+            { name: 'Мятная прохлада', r: 168, g: 228, b: 208 },
+            { name: 'Хвойный лес', r: 34, g: 78, b: 54 },
+            { name: 'Благородный изумруд', r: 18, g: 112, b: 84 },
+            { name: 'Тёмный мох', r: 52, g: 68, b: 48 },
+            // Blues: Hydrangea, Denim, Sky, Ocean
+            { name: 'Утренний туман', r: 214, g: 224, b: 232 },
+            { name: 'Голубая гортензия', r: 164, g: 198, b: 228 },
+            { name: 'Парижское небо', r: 118, g: 168, b: 216 },
+            { name: 'Французский деним', r: 74, g: 112, b: 152 },
+            { name: 'Глубокий сапфир', r: 32, g: 62, b: 118 },
+            { name: 'Полночный океан', r: 18, g: 34, b: 64 },
+            { name: 'Лазурный берег', r: 38, g: 166, b: 188 },
+            { name: 'Морская волна', r: 22, g: 118, b: 128 },
+            // Lavenders, Plums & Lilacs
+            { name: 'Лавандовый туман', r: 212, g: 198, b: 228 },
+            { name: 'Нежная сирень', r: 186, g: 158, b: 212 },
+            { name: 'Прованская лаванда', r: 148, g: 116, b: 188 },
+            { name: 'Спелый инжир', r: 92, g: 56, b: 98 },
+            { name: 'Ежевичный джем', r: 58, g: 32, b: 68 },
+            // Greys, Charcoals & Blacks
+            { name: 'Серебристый шёлк', r: 206, g: 208, b: 212 },
+            { name: 'Тёплый камень (Тауп)', r: 154, g: 144, b: 138 },
+            { name: 'Лондонский дождь', r: 118, g: 122, b: 128 },
+            { name: 'Мокрый асфальт', r: 72, g: 76, b: 82 },
+            { name: 'Графитовый кашемир', r: 44, g: 46, b: 50 },
+            { name: 'Чёрный оникс', r: 18, g: 18, b: 20 }
+        ];
+
+        /**
+         * Blogger's Curated Products Catalog (Wildberries / Lamoda / Golden Apple)
+         */
+        const bloggerProducts = [
+            { id: 'p1', title: 'Объёмный кардиган из мягкой шерсти', store: 'WB', sku: 'Арт. 18492031', hex: '#D8C6B4', category: 'Гардероб' },
+            { id: 'p2', title: 'Классический тренч оверсайз', store: 'Lamoda', sku: 'Арт. MP002XW08', hex: '#BDA285', category: 'Верхняя одежда' },
+            { id: 'p3', title: 'Увлажняющий тинт-бальзам для губ', store: 'Золотое Яблоко', sku: 'Арт. 19000142', hex: '#C48A91', category: 'Макияж' },
+            { id: 'p4', title: 'Кожаная сумка-багет в винном оттенке', store: 'WB', sku: 'Арт. 21049582', hex: '#621626', category: 'Аксессуары' },
+            { id: 'p5', title: 'Джинсы прямого кроя на высокой посадке', store: 'Lamoda', sku: 'Арт. RTLAC941', hex: '#4A7098', category: 'Деним' },
+            { id: 'p6', title: 'Ароматическая свеча в керамике «Инжир и Шалфей»', store: 'WB', sku: 'Арт. 16382910', hex: '#8EA592', category: 'Уют дома' },
+            { id: 'p7', title: 'Шёлковая пижама в оттенке топлёного молока', store: 'WB', sku: 'Арт. 19940211', hex: '#F8F1E5', category: 'Дом и сон' },
+            { id: 'p8', title: 'Кремовые румяна с эффектом свечения', store: 'Золотое Яблоко', sku: 'Арт. 19008812', hex: '#E8A5B2', category: 'Макияж' },
+            { id: 'p9', title: 'Плед крупной вязки «Солёная карамель»', store: 'WB', sku: 'Арт. 15029384', hex: '#C6864E', category: 'Уют дома' },
+            { id: 'p10', title: 'Керамическая кружка ручной работы «Матча»', store: 'WB', sku: 'Арт. 20491823', hex: '#A8C08A', category: 'Сервировка' },
+            { id: 'p11', title: 'Кашемировый шарф в оттенке горького шоколада', store: 'Lamoda', sku: 'Арт. MP002XM91', hex: '#3E2920', category: 'Аксессуары' },
+            { id: 'p12', title: 'Льняная рубашка свободного кроя «Гортензия»', store: 'WB', sku: 'Арт. 22819304', hex: '#A4C6E4', category: 'Гардероб' }
+        ];
+
+        /**
+         * Olfactory Color-Synesthesia Archetypes (Pure Math Mapping without AI)
+         */
+        const OLFACTORY_ARCHETYPES = [
+            {
+                id: 'lactonic_cashmere',
+                familyName: 'Лактонно-пудровый и кашемировый мускус',
+                poeticTitle: 'Кашемировое облако и миндальное молоко',
+                r: 242, g: 232, b: 218,
+                topNotes: ['Белый бергамот', 'Розовый перец', 'Альдегиды чистоты'],
+                heartNotes: ['Миндальное молоко', 'Цветок хлопка', 'Белый ирис'],
+                baseNotes: ['Кашмеран', 'Белый мускус', 'Сливочный сандал'],
+                vector: { lactonic: 95, gourmand: 45, fresh: 40, green: 10, floral: 55, woody: 60 }
+            },
+            {
+                id: 'warm_gourmand',
+                familyName: 'Пряно-гурманский и согревающий амбровый',
+                poeticTitle: 'Пряный латте, солёная карамель и сандал',
+                r: 185, g: 132, b: 88,
+                topNotes: ['Кардамон', 'Корица Цейлон', 'Жареный фундук'],
+                heartNotes: ['Солёная карамель', 'Абсолют кофе', 'Сливочный пралине'],
+                baseNotes: ['Мадагаскарская ваниль', 'Бобы тонка', 'Сандаловое дерево'],
+                vector: { lactonic: 65, gourmand: 96, fresh: 10, green: 15, floral: 20, woody: 82 }
+            },
+            {
+                id: 'dark_cherry_oud',
+                familyName: 'Глубокий восточно-гурманский и винный',
+                poeticTitle: 'Винный бархат, тёмная вишня и амбра',
+                r: 92, g: 28, b: 36,
+                topNotes: ['Чёрная вишня', 'Горький миндаль', 'Выдержанный ликёр'],
+                heartNotes: ['Турецкая роза', 'Слива Мирабель', 'Гвоздика и корица'],
+                baseNotes: ['Перуанский бальзам', 'Дымный ветивер', 'Тёмный шоколад и пачули'],
+                vector: { lactonic: 30, gourmand: 92, fresh: 5, green: 10, floral: 48, woody: 90 }
+            },
+            {
+                id: 'rose_peony_chypre',
+                familyName: 'Цветочно-пудровый и фруктово-шипровый',
+                poeticTitle: 'Шёлковый пион, личи и розовая пудра',
+                r: 222, g: 158, b: 172,
+                topNotes: ['Сочный личи', 'Ревень', 'Розовый грейпфрут'],
+                heartNotes: ['Дамасская роза', 'Розовый пион', 'Лепестки фиалки'],
+                baseNotes: ['Ванильная пудра', 'Белый кедр', 'Шёлковый мускус'],
+                vector: { lactonic: 75, gourmand: 40, fresh: 45, green: 25, floral: 98, woody: 35 }
+            },
+            {
+                id: 'green_matcha_fig',
+                familyName: 'Зелёный фужерный и инжирно-чайный',
+                poeticTitle: 'Лист инжира, утренняя матча и шалфей',
+                r: 148, g: 172, b: 142,
+                topNotes: ['Лист молодого инжира', 'Японский чай Матча', 'Цедра бергамота'],
+                heartNotes: ['Шалфей мускатный', 'Инжирное молочко', 'Лист смородины'],
+                baseNotes: ['Свежий ветивер', 'Кора белого кедра', 'Мягкий мате'],
+                vector: { lactonic: 45, gourmand: 20, fresh: 72, green: 98, floral: 35, woody: 68 }
+            },
+            {
+                id: 'marine_mineral',
+                familyName: 'Акватический, минеральный и озоновый',
+                poeticTitle: 'Морская соль, голубая гортензия и бриз',
+                r: 118, g: 164, b: 208,
+                topNotes: ['Морская соль', 'Сицилийский лимон', 'Озоновый воздух'],
+                heartNotes: ['Голубая гортензия', 'Шалфей на ветру', 'Белый чай'],
+                baseNotes: ['Амброксан', 'Мокрая древесина', 'Минеральный мускус'],
+                vector: { lactonic: 35, gourmand: 5, fresh: 98, green: 55, floral: 45, woody: 52 }
+            },
+            {
+                id: 'citrus_amber_sun',
+                familyName: 'Солнечный цитрусово-амбровый',
+                poeticTitle: 'Нероли, золотое шампанское и тёплая амбра',
+                r: 238, g: 185, b: 84,
+                topNotes: ['Красный сицилийский апельсин', 'Мандарин', 'Игристое шампанское'],
+                heartNotes: ['Цветы нероли', 'Жасмин самбак', 'Медовый османтус'],
+                baseNotes: ['Золотая амбра', 'Сухое дерево', 'Тёплый бензоин'],
+                vector: { lactonic: 40, gourmand: 58, fresh: 84, green: 30, floral: 75, woody: 55 }
+            },
+            {
+                id: 'graphite_mineral_wood',
+                familyName: 'Нишевый минерально-древесный и замшевый',
+                poeticTitle: 'Тонкая замша, минеральный аккорд и кедр',
+                r: 68, g: 72, b: 78,
+                topNotes: ['Лист фиалки', 'Сычуаньский перец', 'Итальянский мандарин'],
+                heartNotes: ['Тонкая замша', 'Бессмертник', 'Минеральный озон'],
+                baseNotes: ['Акигалавуд', 'Атласский кедр', 'Дымный ладан'],
+                vector: { lactonic: 25, gourmand: 20, fresh: 60, green: 45, floral: 20, woody: 96 }
+            }
+        ];
+
+        /**
+         * Curated Database of Real Iconic Perfumes with 6-Axis Vectors & Density Factor (for Weather Dosage)
+         */
+        const PERFUME_CATALOG = [
+            {
+                brand: 'Byredo',
+                name: 'Blanche',
+                store: 'Золотое Яблоко / Randewoo',
+                hex: '#F5F5F7',
+                density: 0.85,
+                notes: 'Альдегиды, белая роза, пион, фиалка, сандал и мускус чистой рубашки',
+                vector: { lactonic: 92, gourmand: 10, fresh: 78, green: 20, floral: 82, woody: 40 }
+            },
+            {
+                brand: 'Zadig & Voltaire',
+                name: 'This is Her!',
+                store: 'Золотое Яблоко / Рив Гош',
+                hex: '#F8F1E5',
+                density: 1.35,
+                notes: 'Взбитые сливки, розовый перец, каштан, ваниль, кашмеран и сандал',
+                vector: { lactonic: 98, gourmand: 80, fresh: 15, green: 10, floral: 45, woody: 78 }
+            },
+            {
+                brand: 'Le Labo',
+                name: 'The Matcha 26',
+                store: 'Randewoo / ЦУМ',
+                hex: '#A8C08A',
+                density: 1.0,
+                notes: 'Японский чай матча, сливочный инжир, горький апельсин, ветивер и кедр',
+                vector: { lactonic: 58, gourmand: 25, fresh: 68, green: 96, floral: 25, woody: 76 }
+            },
+            {
+                brand: 'Diptyque',
+                name: 'Philosykos',
+                store: 'Золотое Яблоко / Randewoo',
+                hex: '#8EA592',
+                density: 0.9,
+                notes: 'Лист и плод греческого инжира, кокосовое молочко, зелёные ноты и белый кедр',
+                vector: { lactonic: 62, gourmand: 20, fresh: 75, green: 98, floral: 30, woody: 65 }
+            },
+            {
+                brand: 'Tom Ford',
+                name: 'Lost Cherry',
+                store: 'Randewoo / Золотое Яблоко',
+                hex: '#621626',
+                density: 1.55,
+                notes: 'Спелая вишня, вишнёвый ликёр, горький миндаль, турецкая роза, бобы тонка и сандал',
+                vector: { lactonic: 35, gourmand: 96, fresh: 10, green: 10, floral: 52, woody: 84 }
+            },
+            {
+                brand: 'Kilian',
+                name: "Angels' Share",
+                store: 'Randewoo / Иль де Ботэ',
+                hex: '#C6864E',
+                density: 1.7,
+                notes: 'Коньячная эссенция, корица, пралине, бобы тонка, ваниль и дубовая бочка',
+                vector: { lactonic: 45, gourmand: 98, fresh: 5, green: 10, floral: 15, woody: 92 }
+            },
+            {
+                brand: 'Parfums de Marly',
+                name: 'Delina',
+                store: 'Randewoo / Золотое Яблоко',
+                hex: '#E8A5B2',
+                density: 1.4,
+                notes: 'Турецкая роза, пион, сочный личи, ревень, мускатный орех, ваниль и кашмеран',
+                vector: { lactonic: 72, gourmand: 42, fresh: 52, green: 30, floral: 98, woody: 42 }
+            },
+            {
+                brand: 'Jo Malone',
+                name: 'Wood Sage & Sea Salt',
+                store: 'Randewoo / Золотое Яблоко',
+                hex: '#A4C6E4',
+                density: 0.75,
+                notes: 'Морская соль, мускатный шалфей, семена амбретты, грейпфрут и красные водоросли',
+                vector: { lactonic: 30, gourmand: 5, fresh: 96, green: 65, floral: 30, woody: 58 }
+            },
+            {
+                brand: 'Essential Parfums',
+                name: 'Bois Impérial',
+                store: 'Золотое Яблоко',
+                hex: '#8C9284',
+                density: 1.5,
+                notes: 'Тайский базилик, грейпфрут, непальский перец Тимут, ветивер и молекула Акигалавуд',
+                vector: { lactonic: 15, gourmand: 10, fresh: 82, green: 78, floral: 15, woody: 96 }
+            },
+            {
+                brand: 'Marc-Antoine Barrois',
+                name: 'Ganymede',
+                store: 'Золотое Яблоко / Randewoo',
+                hex: '#BDA285',
+                density: 1.65,
+                notes: 'Итальянский мандарин, шафран, тонкая замша, лист фиалки, бессмертник и акигалавуд',
+                vector: { lactonic: 25, gourmand: 30, fresh: 65, green: 40, floral: 30, woody: 95 }
+            }
+        ];
+
+        // Application State
+        const state = {
+            algorithm: 'kmeans',      // 'kmeans' | 'mediancut' | 'histogram'
+            colorCount: 6,            // 4 to 12
+            minDelta: 28,             // Minimum Euclidean color distance
+            kernelSize: 3,            // 1 (1x1 px), 3 (3x3 px noise smoothing), 5 (5x5 px)
+            sortBy: 'dominance',      // 'dominance' | 'luminance' | 'hue'
+            activeFormat: 'hex',      // 'hex' | 'rgb' | 'hsl'
+            activeCodeTab: 'css',     // 'css' | 'json' | 'tailwind'
+            storyTemplate: 'pinterest', // 'pinterest' | 'polaroid' | 'editorial' | 'perfume'
+            blogHandle: '@my_lifestyle_blog',
+            storyTitle: 'Палитра моего дня ✨',
+            bloggerPromo: 'БЛОГ10',
+            weatherTemp: 20,          // -15 to +35 Celsius
+            occasion: 'walk',         // 'office' | 'walk' | 'date' | 'party'
+            showPins: true,
+            palette: [],              // Array of { r, g, b, count, percentage, x, y, id }
+            sampledPixels: [],        // Cached downsampled pixels for real-time percentage recalculation
+            selectedColorIdx: 0,      // Index of palette color selected for Harmony companion
+            olfactoryProfile: null,   // Calculated pyramid, 6-axis DNA vector & top matched perfumes
+            draggingPinId: null,
+            activeHighlightId: null
+        };
+
+        // DOM Elements
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d', { willReadFrequently: true });
+        const loupe = document.getElementById('pixelLoupe');
+        const loupeCanvas = document.getElementById('loupeCanvas');
+        const loupeCtx = loupeCanvas.getContext('2d');
+        const loupeHexBadge = document.getElementById('loupeHexBadge');
+        const loupeReticle = document.getElementById('loupeReticle');
+        const pinsLayer = document.getElementById('pinsLayer');
+        const paletteList = document.getElementById('paletteList');
+        const proportionBar = document.getElementById('proportionBar');
+
+        // Offscreen analysis canvas for fast pixel quantization
+        const analysisCanvas = document.createElement('canvas');
+        const analysisCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
+
+        /**
+         * Reads and averages an N×N pixel neighborhood (1×1, 3×3, or 5×5) around (px, py)
+         * to suppress JPEG compression artifacts and camera ISO noise.
+         */
+        function sampleCanvasColor(px, py, kernelSize = state.kernelSize) {
+            const width = mainCanvas.width;
+            const height = mainCanvas.height;
+            const clampedX = Math.min(width - 1, Math.max(0, Math.floor(px)));
+            const clampedY = Math.min(height - 1, Math.max(0, Math.floor(py)));
+
+            if (kernelSize <= 1) {
+                const d = ctx.getImageData(clampedX, clampedY, 1, 1).data;
+                return { r: d[0], g: d[1], b: d[2] };
+            }
+
+            const radius = Math.floor(kernelSize / 2);
+            const x0 = Math.max(0, clampedX - radius);
+            const y0 = Math.max(0, clampedY - radius);
+            const x1 = Math.min(width - 1, clampedX + radius);
+            const y1 = Math.min(height - 1, clampedY + radius);
+            const w = x1 - x0 + 1;
+            const h = y1 - y0 + 1;
+
+            const data = ctx.getImageData(x0, y0, w, h).data;
+            let rSum = 0, gSum = 0, bSum = 0, weightSum = 0;
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const idx = (y * w + x) * 4;
+                    if (data[idx + 3] < 128) continue;
+                    const isCenter = (x0 + x === clampedX) && (y0 + y === clampedY);
+                    const weight = isCenter ? 2 : 1;
+                    rSum += data[idx] * weight;
+                    gSum += data[idx + 1] * weight;
+                    bSum += data[idx + 2] * weight;
+                    weightSum += weight;
+                }
+            }
+
+            if (weightSum === 0) {
+                const d = ctx.getImageData(clampedX, clampedY, 1, 1).data;
+                return { r: d[0], g: d[1], b: d[2] };
+            }
+
+            return {
+                r: Math.round(rSum / weightSum),
+                g: Math.round(gSum / weightSum),
+                b: Math.round(bSum / weightSum)
+            };
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join('').toUpperCase();
+        }
+
+        function hexToRgb(hex) {
+            const clean = hex.replace('#', '');
+            const num = parseInt(clean, 16);
+            return {
+                r: (num >> 16) & 255,
+                g: (num >> 8) & 255,
+                b: num & 255
+            };
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h = 0, s = 0, l = (max + min) / 2;
+            if (max !== min) {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return {
+                h: Math.round(h * 360),
+                s: Math.round(s * 100),
+                l: Math.round(l * 100)
+            };
+        }
+
+        function hslToRgb(h, s, l) {
+            h = ((h % 360) + 360) % 360 / 360;
+            s = Math.max(0, Math.min(100, s)) / 100;
+            l = Math.max(0, Math.min(100, l)) / 100;
+            let r, g, b;
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return {
+                r: Math.round(r * 255),
+                g: Math.round(g * 255),
+                b: Math.round(b * 255)
+            };
+        }
+
+        function getLuminance(r, g, b) {
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        }
+
+        // Weighted Euclidean distance in RGB space (Redmean human eye approximation)
+        function colorDistance(c1, c2) {
+            const rmean = (c1.r + c2.r) / 2;
+            const dr = c1.r - c2.r;
+            const dg = c1.g - c2.g;
+            const db = c1.b - c2.b;
+            return Math.sqrt(
+                (2 + rmean / 256) * dr * dr +
+                4 * dg * dg +
+                (2 + (255 - rmean) / 256) * db * db
+            ) / 3;
+        }
+
+        /**
+         * Finds the closest poetic lifestyle color name using pure ΔE math
+         */
+        function getPoeticColorName(r, g, b) {
+            let bestName = 'Благородный оттенок';
+            let minDist = Infinity;
+            const target = { r, g, b };
+            for (let i = 0; i < POETIC_COLORS.length; i++) {
+                const d = colorDistance(target, POETIC_COLORS[i]);
+                if (d < minDist) {
+                    minDist = d;
+                    bestName = POETIC_COLORS[i].name;
+                }
+            }
+            return bestName;
+        }
+
+        function formatColorValue(color, format = state.activeFormat) {
+            const { r, g, b } = color;
+            const hex = rgbToHex(r, g, b);
+            if (format === 'hex') return hex;
+            if (format === 'rgb') return `rgb(${r}, ${g}, ${b})`;
+            if (format === 'hsl') {
+                const { h, s, l } = rgbToHsl(r, g, b);
+                return `hsl(${h}°, ${s}%, ${l}%)`;
+            }
+            return hex;
+        }
+
+        /**
+         * Dynamically recalculates the exact percentage share of each palette color
+         */
+        function recalculatePaletteShares() {
+            const palette = state.palette;
+            const pixels = state.sampledPixels;
+            if (!palette.length || !pixels.length) return;
+
+            for (let i = 0; i < palette.length; i++) {
+                palette[i].count = 0;
+            }
+
+            for (let i = 0; i < pixels.length; i++) {
+                const p = pixels[i];
+                let bestIdx = 0;
+                let minDist = Infinity;
+                for (let cIdx = 0; cIdx < palette.length; cIdx++) {
+                    const d = colorDistance(p, palette[cIdx]);
+                    if (d < minDist) {
+                        minDist = d;
+                        bestIdx = cIdx;
+                    }
+                }
+                palette[bestIdx].count++;
+            }
+
+            const total = pixels.length || 1;
+            for (let i = 0; i < palette.length; i++) {
+                palette[i].percentage = Number(((palette[i].count / total) * 100).toFixed(1));
+            }
+        }
+
+        /**
+         * ALGORITHM 1: Deterministic K-Means++ Clustering
+         */
+        function extractKMeans(pixels, k, minDelta) {
+            if (pixels.length === 0) return [];
+
+            const centroids = [];
+            centroids.push({ ...pixels[Math.floor(pixels.length / 2)] });
+
+            while (centroids.length < k) {
+                const candidates = [];
+                const step = Math.max(1, Math.floor(pixels.length / 400));
+                for (let i = 0; i < pixels.length; i += step) {
+                    const p = pixels[i];
+                    let minDistToCentroid = Infinity;
+                    for (let c of centroids) {
+                        const d = colorDistance(p, c);
+                        if (d < minDistToCentroid) minDistToCentroid = d;
+                    }
+                    candidates.push({ pixel: p, dist: minDistToCentroid });
+                }
+                candidates.sort((a, b) => a.dist - b.dist);
+                const pickIdx = Math.min(candidates.length - 1, Math.floor(candidates.length * 0.95));
+                centroids.push({ ...candidates[pickIdx].pixel });
+            }
+
+            const assignments = new Int32Array(pixels.length);
+            for (let iter = 0; iter < 10; iter++) {
+                const sums = Array.from({ length: k }, () => ({ r: 0, g: 0, b: 0, count: 0 }));
+
+                for (let i = 0; i < pixels.length; i++) {
+                    const p = pixels[i];
+                    let bestCluster = 0;
+                    let minDist = Infinity;
+                    for (let cIdx = 0; cIdx < k; cIdx++) {
+                        const d = colorDistance(p, centroids[cIdx]);
+                        if (d < minDist) {
+                            minDist = d;
+                            bestCluster = cIdx;
+                        }
+                    }
+                    assignments[i] = bestCluster;
+                    sums[bestCluster].r += p.r;
+                    sums[bestCluster].g += p.g;
+                    sums[bestCluster].b += p.b;
+                    sums[bestCluster].count++;
+                }
+
+                let moved = false;
+                for (let cIdx = 0; cIdx < k; cIdx++) {
+                    if (sums[cIdx].count > 0) {
+                        const nr = Math.round(sums[cIdx].r / sums[cIdx].count);
+                        const ng = Math.round(sums[cIdx].g / sums[cIdx].count);
+                        const nb = Math.round(sums[cIdx].b / sums[cIdx].count);
+                        if (nr !== centroids[cIdx].r || ng !== centroids[cIdx].g || nb !== centroids[cIdx].b) {
+                            moved = true;
+                        }
+                        centroids[cIdx].r = nr;
+                        centroids[cIdx].g = ng;
+                        centroids[cIdx].b = nb;
+                    }
+                }
+                if (!moved) break;
+            }
+
+            const rawClusters = [];
+            for (let cIdx = 0; cIdx < k; cIdx++) {
+                let count = 0;
+                let closestPixel = null;
+                let bestDist = Infinity;
+
+                for (let i = 0; i < pixels.length; i++) {
+                    if (assignments[i] === cIdx) {
+                        count++;
+                        const d = colorDistance(pixels[i], centroids[cIdx]);
+                        if (d < bestDist) {
+                            bestDist = d;
+                            closestPixel = pixels[i];
+                        }
+                    }
+                }
+                if (count > 0 && closestPixel) {
+                    rawClusters.push({
+                        r: closestPixel.r,
+                        g: closestPixel.g,
+                        b: closestPixel.b,
+                        x: closestPixel.x,
+                        y: closestPixel.y,
+                        count
+                    });
+                }
+            }
+
+            return filterAndNormalizeClusters(rawClusters, minDelta);
+        }
+
+        /**
+         * ALGORITHM 2: Median Cut Color Quantization
+         */
+        function extractMedianCut(pixels, k, minDelta) {
+            if (pixels.length === 0) return [];
+            let boxes = [pixels.slice()];
+
+            while (boxes.length < k) {
+                let bestBoxIdx = -1;
+                let maxRange = -1;
+                let longestChannel = 'r';
+
+                for (let i = 0; i < boxes.length; i++) {
+                    const box = boxes[i];
+                    if (box.length < 2) continue;
+                    let rMin = 255, rMax = 0, gMin = 255, gMax = 0, bMin = 255, bMax = 0;
+                    for (let p of box) {
+                        if (p.r < rMin) rMin = p.r; if (p.r > rMax) rMax = p.r;
+                        if (p.g < gMin) gMin = p.g; if (p.g > gMax) gMax = p.g;
+                        if (p.b < bMin) bMin = p.b; if (p.b > bMax) bMax = p.b;
+                    }
+                    const rRange = rMax - rMin;
+                    const gRange = gMax - gMin;
+                    const bRange = bMax - bMin;
+                    const boxMaxRange = Math.max(rRange, gRange, bRange);
+
+                    if (boxMaxRange > maxRange) {
+                        maxRange = boxMaxRange;
+                        bestBoxIdx = i;
+                        if (rRange >= gRange && rRange >= bRange) longestChannel = 'r';
+                        else if (gRange >= rRange && gRange >= bRange) longestChannel = 'g';
+                        else longestChannel = 'b';
+                    }
+                }
+
+                if (bestBoxIdx === -1 || maxRange === 0) break;
+
+                const targetBox = boxes.splice(bestBoxIdx, 1)[0];
+                targetBox.sort((a, b) => a[longestChannel] - b[longestChannel]);
+                const mid = Math.floor(targetBox.length / 2);
+                boxes.push(targetBox.slice(0, mid), targetBox.slice(mid));
+            }
+
+            const rawClusters = boxes.map(box => {
+                let rSum = 0, gSum = 0, bSum = 0;
+                for (let p of box) {
+                    rSum += p.r; gSum += p.g; bSum += p.b;
+                }
+                const avg = {
+                    r: Math.round(rSum / box.length),
+                    g: Math.round(gSum / box.length),
+                    b: Math.round(bSum / box.length)
+                };
+                let closest = box[0];
+                let minDist = Infinity;
+                for (let p of box) {
+                    const d = colorDistance(p, avg);
+                    if (d < minDist) {
+                        minDist = d;
+                        closest = p;
+                    }
+                }
+                return {
+                    r: closest.r,
+                    g: closest.g,
+                    b: closest.b,
+                    x: closest.x,
+                    y: closest.y,
+                    count: box.length
+                };
+            });
+
+            return filterAndNormalizeClusters(rawClusters, minDelta);
+        }
+
+        /**
+         * ALGORITHM 3: 3D Histogram Peaks + Vibrant Accent Detector
+         */
+        function extractHistogramPeaks(pixels, k, minDelta) {
+            const bins = new Map();
+            for (let p of pixels) {
+                const key = ((p.r >> 4) << 8) | ((p.g >> 4) << 4) | (p.b >> 4);
+                let entry = bins.get(key);
+                if (!entry) {
+                    const { s } = rgbToHsl(p.r, p.g, p.b);
+                    entry = { count: 0, sample: p, saturation: s };
+                    bins.set(key, entry);
+                }
+                entry.count++;
+            }
+
+            const sortedBins = Array.from(bins.values()).sort((a, b) => {
+                const scoreA = a.count * (1 + (a.saturation / 100) * 1.5);
+                const scoreB = b.count * (1 + (b.saturation / 100) * 1.5);
+                return scoreB - scoreA;
+            });
+
+            const selected = [];
+            for (let bin of sortedBins) {
+                if (selected.length >= k) break;
+                const candidate = bin.sample;
+                let tooClose = false;
+                for (let existing of selected) {
+                    if (colorDistance(candidate, existing) < minDelta) {
+                        existing.count += bin.count;
+                        tooClose = true;
+                        break;
+                    }
+                }
+                if (!tooClose) {
+                    selected.push({
+                        r: candidate.r,
+                        g: candidate.g,
+                        b: candidate.b,
+                        x: candidate.x,
+                        y: candidate.y,
+                        count: bin.count
+                    });
+                }
+            }
+
+            return filterAndNormalizeClusters(selected, minDelta * 0.5);
+        }
+
+        function filterAndNormalizeClusters(clusters, minDelta) {
+            clusters.sort((a, b) => b.count - a.count);
+            const merged = [];
+
+            for (let c of clusters) {
+                let foundSimilar = false;
+                for (let m of merged) {
+                    if (colorDistance(c, m) < minDelta * 0.65) {
+                        m.count += c.count;
+                        foundSimilar = true;
+                        break;
+                    }
+                }
+                if (!foundSimilar) {
+                    merged.push({ ...c });
+                }
+            }
+
+            const sumCounts = merged.reduce((acc, item) => acc + item.count, 0) || 1;
+            return merged.map((item, idx) => ({
+                ...item,
+                id: 'pin-' + idx + '-' + Date.now(),
+                percentage: Number(((item.count / sumCounts) * 100).toFixed(1))
+            }));
+        }
+
+        /**
+         * Main execution pipeline
+         */
+        function analyzeImagePalette() {
+            const t0 = performance.now();
+            const width = mainCanvas.width;
+            const height = mainCanvas.height;
+            if (!width || !height) return;
+
+            const maxSampleDim = 180;
+            const scale = Math.min(1, maxSampleDim / Math.max(width, height));
+            const sWidth = Math.max(1, Math.round(width * scale));
+            const sHeight = Math.max(1, Math.round(height * scale));
+
+            analysisCanvas.width = sWidth;
+            analysisCanvas.height = sHeight;
+            analysisCtx.drawImage(mainCanvas, 0, 0, sWidth, sHeight);
+
+            const imgData = analysisCtx.getImageData(0, 0, sWidth, sHeight).data;
+            const pixels = [];
+
+            for (let y = 0; y < sHeight; y++) {
+                for (let x = 0; x < sWidth; x++) {
+                    const i = (y * sWidth + x) * 4;
+                    if (imgData[i + 3] < 128) continue;
+                    pixels.push({
+                        r: imgData[i],
+                        g: imgData[i + 1],
+                        b: imgData[i + 2],
+                        x: (x + 0.5) / sWidth,
+                        y: (y + 0.5) / sHeight
+                    });
+                }
+            }
+
+            state.sampledPixels = pixels;
+
+            let extracted = [];
+            if (state.algorithm === 'kmeans') {
+                extracted = extractKMeans(pixels, state.colorCount, state.minDelta);
+            } else if (state.algorithm === 'mediancut') {
+                extracted = extractMedianCut(pixels, state.colorCount, state.minDelta);
+            } else {
+                extracted = extractHistogramPeaks(pixels, state.colorCount, state.minDelta);
+            }
+
+            extracted.forEach(item => {
+                const px = Math.min(width - 1, Math.max(0, Math.floor(item.x * width)));
+                const py = Math.min(height - 1, Math.max(0, Math.floor(item.y * height)));
+                const smoothed = sampleCanvasColor(px, py);
+                item.r = smoothed.r;
+                item.g = smoothed.g;
+                item.b = smoothed.b;
+            });
+
+            state.palette = extracted;
+            state.selectedColorIdx = 0;
+            recalculatePaletteShares();
+            sortPalette();
+
+            const elapsed = Math.round(performance.now() - t0);
+            document.getElementById('processingTime').textContent = `${elapsed} мс • Без ИИ`;
+
+            renderAll();
+        }
+
+        function sortPalette() {
+            if (state.sortBy === 'dominance') {
+                state.palette.sort((a, b) => b.percentage - a.percentage);
+            } else if (state.sortBy === 'luminance') {
+                state.palette.sort((a, b) => getLuminance(b.r, b.g, b.b) - getLuminance(a.r, a.g, a.b));
+            } else if (state.sortBy === 'hue') {
+                state.palette.sort((a, b) => rgbToHsl(a.r, a.g, a.b).h - rgbToHsl(b.r, b.g, b.b).h);
+            }
+        }
+
+        function renderAll() {
+            renderPinsOnPhoto();
+            renderProportionAnd603010();
+            renderPaletteCards();
+            renderHarmonyWidget();
+            renderMatchedBloggerProducts();
+            renderOlfactorySommelier();
+        }
+
+        function renderPinsOnPhoto() {
+            pinsLayer.innerHTML = '';
+            if (!state.showPins) return;
+
+            state.palette.forEach((item, index) => {
+                const hex = rgbToHex(item.r, item.g, item.b);
+                const lum = getLuminance(item.r, item.g, item.b);
+                const textColor = lum > 145 ? '#0c0a09' : '#ffffff';
+
+                const pin = document.createElement('div');
+                pin.className = `color-pin pointer-events-auto absolute w-7 h-7 rounded-full border-2 border-white shadow-xl flex items-center justify-center cursor-grab active:cursor-grabbing text-[11px] font-mono font-bold select-none ${state.activeHighlightId === item.id ? 'active-pin ring-4 ring-rose-500' : ''}`;
+                pin.style.left = `${item.x * 100}%`;
+                pin.style.top = `${item.y * 100}%`;
+                pin.style.backgroundColor = hex;
+                pin.style.color = textColor;
+                pin.dataset.id = item.id;
+                pin.title = `${getPoeticColorName(item.r, item.g, item.b)} (${hex})`;
+                pin.textContent = index + 1;
+
+                pin.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
+                    state.draggingPinId = item.id;
+                    state.selectedColorIdx = index;
+                    triggerHaptic('light');
+                    pin.setPointerCapture(e.pointerId);
+                    updateLoupeAtClientPos(e.clientX, e.clientY);
+                });
+
+                pin.addEventListener('pointermove', (e) => {
+                    if (state.draggingPinId !== item.id) return;
+                    e.stopPropagation();
+                    movePinToClientPos(item, e.clientX, e.clientY);
+                });
+
+                pin.addEventListener('pointerup', () => {
+                    if (state.draggingPinId === item.id) {
+                        state.draggingPinId = null;
+                        loupe.classList.add('hidden');
+                        triggerHaptic('light');
+                        if (state.sortBy === 'dominance') sortPalette();
+                        renderAll();
+                    }
+                });
+
+                pinsLayer.appendChild(pin);
+            });
+        }
+
+        function movePinToClientPos(item, clientX, clientY) {
+            const rect = mainCanvas.getBoundingClientRect();
+            const normX = Math.min(0.995, Math.max(0.005, (clientX - rect.left) / rect.width));
+            const normY = Math.min(0.995, Math.max(0.005, (clientY - rect.top) / rect.height));
+            item.x = normX;
+            item.y = normY;
+
+            const px = Math.min(mainCanvas.width - 1, Math.max(0, Math.floor(normX * mainCanvas.width)));
+            const py = Math.min(mainCanvas.height - 1, Math.max(0, Math.floor(normY * mainCanvas.height)));
+            const smoothed = sampleCanvasColor(px, py);
+            item.r = smoothed.r;
+            item.g = smoothed.g;
+            item.b = smoothed.b;
+
+            recalculatePaletteShares();
+
+            const pinEl = pinsLayer.querySelector(`[data-id="${item.id}"]`);
+            if (pinEl) {
+                const hex = rgbToHex(item.r, item.g, item.b);
+                pinEl.style.left = `${normX * 100}%`;
+                pinEl.style.top = `${normY * 100}%`;
+                pinEl.style.backgroundColor = hex;
+                pinEl.style.color = getLuminance(item.r, item.g, item.b) > 145 ? '#0c0a09' : '#ffffff';
+            }
+            updateLoupeAtClientPos(clientX, clientY);
+            renderPaletteCards();
+            renderProportionAnd603010();
+            renderHarmonyWidget();
+            renderMatchedBloggerProducts();
+            renderOlfactorySommelier();
+        }
+
+        /**
+         * Finds the closest Olfactory Archetype for a given RGB color using weighted ΔE
+         */
+        function getClosestOlfactoryArchetype(color) {
+            let best = OLFACTORY_ARCHETYPES[0];
+            let minDist = Infinity;
+            for (let arch of OLFACTORY_ARCHETYPES) {
+                const d = colorDistance(color, arch);
+                if (d < minDist) {
+                    minDist = d;
+                    best = arch;
+                }
+            }
+            return best;
+        }
+
+        /**
+         * Cosine similarity between two 6-axis accord vectors
+         */
+        function computeAccordCosineSimilarity(vA, vB) {
+            const keys = ['lactonic', 'gourmand', 'fresh', 'green', 'floral', 'woody'];
+            let dot = 0, magA = 0, magB = 0;
+            for (let k of keys) {
+                const a = vA[k] || 0;
+                const b = vB[k] || 0;
+                dot += a * b;
+                magA += a * a;
+                magB += b * b;
+            }
+            if (magA === 0 || magB === 0) return 0;
+            return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+        }
+
+        /**
+         * Calculates Spray Dosage based on Physics of Essential Oil Volatility:
+         * Temperature T (-15..+35°C), Occasion factor, and Perfume Density
+         */
+        function calculateSprayDosage(density = 1.15) {
+            const T = state.weatherTemp;
+            const occasionMultipliers = {
+                office: 0.65, // closed space, strict etiquette
+                walk: 1.25,   // open air, wind dispersion
+                date: 0.90,   // intimate proximity
+                party: 1.35   // evening event
+            };
+            const occMult = occasionMultipliers[state.occasion] || 1.0;
+
+            // Volatility index grows exponentially with temperature above 20°C
+            const volatility = density * Math.exp(0.028 * (T - 20));
+            const rawSprays = (3.2 * occMult) / volatility;
+            const sprays = Math.max(1, Math.min(5, Math.round(rawSprays)));
+
+            let zoneAdvice = '';
+            if (sprays === 1) {
+                zoneAdvice = '1 распыление: войдите в облако или нанесите под волосы на затылке (высокая летучесть в тепле).';
+            } else if (sprays === 2) {
+                zoneAdvice = '2 распыления: на точки пульса (запястья или ключицы) для деликатного шлейфа.';
+            } else if (sprays === 3) {
+                zoneAdvice = '3 распыления: запястья + затылок под волосы — идеальный баланс стойкости и шлейфа.';
+            } else {
+                zoneAdvice = `${sprays} распыления: точки пульса, сгибы локтей и шарф/верхняя одежда (прохладный воздух сдерживает испарение).`;
+            }
+
+            return { sprays, zoneAdvice, volatility: volatility.toFixed(2) };
+        }
+
+        /**
+         * Builds the full Olfactory Sommelier profile from the 60-30-10 photo palette
+         */
+        function renderOlfactorySommelier() {
+            if (!state.palette || state.palette.length === 0) return;
+
+            const sortedByShare = [...state.palette].sort((a, b) => b.percentage - a.percentage);
+            const baseColor = sortedByShare[0];
+            const heartColor = sortedByShare[1] || sortedByShare[0];
+            const topColor = sortedByShare[sortedByShare.length - 1] || sortedByShare[0];
+
+            const baseArch = getClosestOlfactoryArchetype(baseColor);
+            const heartArch = getClosestOlfactoryArchetype(heartColor);
+            const topArch = getClosestOlfactoryArchetype(topColor);
+
+            // Weighted 6-axis Olfactory DNA Vector (Base 50%, Heart 35%, Top 15%)
+            const axes = ['lactonic', 'gourmand', 'fresh', 'green', 'floral', 'woody'];
+            const photoVector = {};
+            axes.forEach(axis => {
+                photoVector[axis] = Math.round(
+                    baseArch.vector[axis] * 0.50 +
+                    heartArch.vector[axis] * 0.35 +
+                    topArch.vector[axis] * 0.15
+                );
+            });
+
+            // Score all perfumes in catalog via Vector Cosine Similarity + Color affinity
+            const scoredPerfumes = PERFUME_CATALOG.map(perf => {
+                const cosSim = computeAccordCosineSimilarity(photoVector, perf.vector);
+                const perfRgb = hexToRgb(perf.hex);
+                const dBase = colorDistance(perfRgb, baseColor);
+                const dHeart = colorDistance(perfRgb, heartColor);
+                const colorAffinity = Math.max(0, 1 - Math.min(dBase, dHeart) / 160);
+
+                const totalScore = Math.min(99, Math.max(76, Math.round((cosSim * 0.78 + colorAffinity * 0.22) * 100)));
+                const dosage = calculateSprayDosage(perf.density);
+                return {
+                    ...perf,
+                    matchPercent: totalScore,
+                    dosage
+                };
+            }).sort((a, b) => b.matchPercent - a.matchPercent);
+
+            const topPerfumes = scoredPerfumes.slice(0, 3);
+            const avgDensity = (topPerfumes[0].density + topPerfumes[1].density) / 2;
+            const globalDosage = calculateSprayDosage(avgDensity);
+
+            state.olfactoryProfile = {
+                familyName: baseArch.familyName,
+                poeticTitle: baseArch.poeticTitle,
+                topColor,
+                heartColor,
+                baseColor,
+                topNotes: topArch.topNotes,
+                heartNotes: heartArch.heartNotes,
+                baseNotes: baseArch.baseNotes,
+                vector: photoVector,
+                topPerfumes,
+                globalDosage
+            };
+
+            // 1. Render Header Banner
+            const baseHex = rgbToHex(baseColor.r, baseColor.g, baseColor.b);
+            const heartHex = rgbToHex(heartColor.r, heartColor.g, heartColor.b);
+            const topHex = rgbToHex(topColor.r, topColor.g, topColor.b);
+
+            document.getElementById('olfactoryHeaderBanner').innerHTML = `
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-11 h-11 rounded-2xl border border-white/20 shrink-0 shadow-lg"
+                         style="background: linear-gradient(135deg, ${topHex} 0%, ${heartHex} 50%, ${baseHex} 100%)"></div>
+                    <div class="min-w-0">
+                        <div class="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-semibold">Ольфакторное семейство кадра</div>
+                        <div class="text-sm font-serif font-bold text-white truncate">${baseArch.poeticTitle}</div>
+                        <div class="text-xs text-stone-400 truncate">${baseArch.familyName}</div>
+                    </div>
+                </div>
+                <button onclick="openPerfumeStoryPreview()" class="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-medium inline-flex items-center gap-1.5 transition shrink-0">
+                    <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+                    <span>Мудборд в Stories</span>
+                </button>
+            `;
+
+            // 2. Render 3-Tier Pyramid Grid
+            const pyramidTiers = [
+                {
+                    tier: 'Верхние ноты (Старт 15 мин)',
+                    sourceRole: `По акценту (${topColor.percentage}%)`,
+                    hex: topHex,
+                    shadeName: getPoeticColorName(topColor.r, topColor.g, topColor.b),
+                    notes: topArch.topNotes
+                },
+                {
+                    tier: 'Ноты сердца (Раскрытие 3 ч)',
+                    sourceRole: `По компаньону (${heartColor.percentage}%)`,
+                    hex: heartHex,
+                    shadeName: getPoeticColorName(heartColor.r, heartColor.g, heartColor.b),
+                    notes: heartArch.heartNotes
+                },
+                {
+                    tier: 'База и шлейф (Стойкость 8 ч)',
+                    sourceRole: `По базе образа (${baseColor.percentage}%)`,
+                    hex: baseHex,
+                    shadeName: getPoeticColorName(baseColor.r, baseColor.g, baseColor.b),
+                    notes: baseArch.baseNotes
+                }
+            ];
+
+            document.getElementById('olfactoryPyramidGrid').innerHTML = pyramidTiers.map(t => `
+                <div class="bg-stone-950/85 border border-stone-800/90 rounded-xl p-3 flex flex-col justify-between gap-2">
+                    <div>
+                        <div class="flex items-center justify-between gap-1.5">
+                            <span class="text-[10px] font-semibold uppercase tracking-wider text-stone-400">${t.tier}</span>
+                            <span class="w-3.5 h-3.5 rounded-full border border-white/20 shrink-0" style="background:${t.hex}" title="${t.shadeName}"></span>
+                        </div>
+                        <div class="text-[11px] text-stone-400 mt-0.5 truncate">Оттенок: <strong class="text-stone-200">${t.shadeName}</strong></div>
+                    </div>
+                    <div class="flex flex-wrap gap-1 pt-1">
+                        ${t.notes.map(n => `<span class="px-2 py-0.5 rounded-md bg-stone-900 border border-stone-700/80 text-[11px] text-amber-200/95 font-medium">${n}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            // 3. Render Weather Dosage Advice
+            const pill = document.getElementById('dosageVerdictPill');
+            pill.textContent = `${globalDosage.sprays} ${globalDosage.sprays === 1 ? 'распыление' : 'распыления'}`;
+            const occasionNames = { office: 'в офис', walk: 'на прогулку', date: 'на свидание', party: 'на вечер' };
+            const sign = state.weatherTemp > 0 ? `+${state.weatherTemp}` : state.weatherTemp;
+            document.getElementById('weatherAdviceText').innerHTML = `
+                При температуре <strong class="text-amber-300 font-mono">${sign}°C</strong> (${occasionNames[state.occasion]}): индекс испарения масел равен <span class="font-mono text-rose-300">${globalDosage.volatility}</span>. 
+                Рекомендация: <strong class="text-white">${globalDosage.zoneAdvice}</strong>
+            `;
+
+            // 4. Render Top 3 Matched Perfumes
+            const promo = state.bloggerPromo || 'БЛОГ10';
+            document.getElementById('matchedPerfumesGrid').innerHTML = topPerfumes.map((p, idx) => `
+                <div onclick="copyToClipboard('${promo}', '${p.hex}', '${p.brand} ${p.name} — промокод скопирован')"
+                     class="group bg-stone-950/90 hover:bg-stone-900 border ${idx === 0 ? 'border-amber-500/50 ring-1 ring-amber-500/20' : 'border-stone-800/90'} rounded-xl p-3 flex flex-col justify-between gap-2.5 cursor-pointer transition">
+                    <div>
+                        <div class="flex items-center justify-between gap-1.5">
+                            <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                ${p.matchPercent}% ДНК
+                            </span>
+                            <span class="text-[10px] font-mono text-stone-400">Доза: ${p.dosage.sprays} пш.</span>
+                        </div>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="w-4 h-4 rounded-full border border-white/20 shrink-0" style="background:${p.hex}"></span>
+                            <div class="min-w-0">
+                                <div class="text-[10px] uppercase tracking-wider text-stone-400 font-semibold truncate">${p.brand}</div>
+                                <div class="text-xs font-bold text-white truncate">${p.name}</div>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-stone-400 mt-1.5 leading-snug line-clamp-2">${p.notes}</p>
+                    </div>
+                    <div class="pt-2 border-t border-stone-800/80 flex items-center justify-between text-[11px]">
+                        <span class="text-stone-400 truncate">${p.store.split('/')[0]}</span>
+                        <span class="font-mono font-bold text-amber-300 group-hover:text-amber-200 flex items-center gap-1">
+                            <span>${promo}</span>
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+
+            // 5. Render 6-Axis Radar Chart & Layering Suggestion
+            renderPerfumeRadarChart(photoVector, baseHex);
+            renderLayeringAlchemy(topPerfumes, baseArch, topArch);
+            lucide.createIcons();
+        }
+
+        /**
+         * Draws a clean 6-Axis Olfactory DNA Radar Chart on #perfumeRadarCanvas
+         */
+        function renderPerfumeRadarChart(vector, accentHex) {
+            const canvas = document.getElementById('perfumeRadarCanvas');
+            if (!canvas) return;
+            const c = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+            c.clearRect(0, 0, W, H);
+
+            const cx = W / 2;
+            const cy = H / 2 + 4;
+            const maxR = 76;
+
+            const labels = [
+                { key: 'lactonic', title: 'Пудра / Мускус' },
+                { key: 'gourmand', title: 'Гурманика' },
+                { key: 'woody', title: 'Дерево / Амбра' },
+                { key: 'green', title: 'Зелень / Чай' },
+                { key: 'fresh', title: 'Аква / Свежесть' },
+                { key: 'floral', title: 'Цветы' }
+            ];
+
+            // Find dominant accord for badge
+            let bestAxis = labels[0];
+            labels.forEach(l => {
+                if ((vector[l.key] || 0) > (vector[bestAxis.key] || 0)) bestAxis = l;
+            });
+            document.getElementById('dominantAccordBadge').textContent = `${bestAxis.title} (${vector[bestAxis.key]}%)`;
+
+            // Draw concentric hexagonal webs (33%, 66%, 100%)
+            [0.33, 0.66, 1.0].forEach(level => {
+                c.beginPath();
+                labels.forEach((_, i) => {
+                    const angle = (Math.PI * 2 * i) / labels.length - Math.PI / 2;
+                    const x = cx + Math.cos(angle) * maxR * level;
+                    const y = cy + Math.sin(angle) * maxR * level;
+                    if (i === 0) c.moveTo(x, y);
+                    else c.lineTo(x, y);
+                });
+                c.closePath();
+                c.strokeStyle = 'rgba(255,255,255,0.10)';
+                c.lineWidth = 1;
+                c.stroke();
+            });
+
+            // Draw axes spokes & labels
+            labels.forEach((item, i) => {
+                const angle = (Math.PI * 2 * i) / labels.length - Math.PI / 2;
+                const xEnd = cx + Math.cos(angle) * maxR;
+                const yEnd = cy + Math.sin(angle) * maxR;
+
+                c.beginPath();
+                c.moveTo(cx, cy);
+                c.lineTo(xEnd, yEnd);
+                c.strokeStyle = 'rgba(255,255,255,0.12)';
+                c.stroke();
+
+                const lx = cx + Math.cos(angle) * (maxR + 24);
+                const ly = cy + Math.sin(angle) * (maxR + 18);
+                c.fillStyle = '#d6d3d1';
+                c.font = '600 10px "Inter", sans-serif';
+                c.textAlign = Math.abs(Math.cos(angle)) < 0.2 ? 'center' : (Math.cos(angle) > 0 ? 'left' : 'right');
+                c.fillText(`${item.title} ${vector[item.key]}%`, lx, ly + 3);
+            });
+
+            // Draw Polygon of Photo's Olfactory DNA
+            c.beginPath();
+            labels.forEach((item, i) => {
+                const val = Math.max(10, Math.min(100, vector[item.key] || 20)) / 100;
+                const angle = (Math.PI * 2 * i) / labels.length - Math.PI / 2;
+                const x = cx + Math.cos(angle) * maxR * val;
+                const y = cy + Math.sin(angle) * maxR * val;
+                if (i === 0) c.moveTo(x, y);
+                else c.lineTo(x, y);
+            });
+            c.closePath();
+            c.fillStyle = 'rgba(244, 63, 94, 0.26)';
+            c.fill();
+            c.strokeStyle = '#fb7185';
+            c.lineWidth = 2;
+            c.stroke();
+
+            // Draw vertex dots
+            labels.forEach((item, i) => {
+                const val = Math.max(10, Math.min(100, vector[item.key] || 20)) / 100;
+                const angle = (Math.PI * 2 * i) / labels.length - Math.PI / 2;
+                const x = cx + Math.cos(angle) * maxR * val;
+                const y = cy + Math.sin(angle) * maxR * val;
+                c.beginPath();
+                c.arc(x, y, 3.5, 0, Math.PI * 2);
+                c.fillStyle = accentHex || '#ffffff';
+                c.fill();
+                c.strokeStyle = '#ffffff';
+                c.lineWidth = 1.5;
+                c.stroke();
+            });
+        }
+
+        /**
+         * Layering Alchemy Calculator (combines the #1 Base Perfume with a contrasting/refreshing Accent Perfume)
+         */
+        function renderLayeringAlchemy(topPerfumes, baseArch, topArch) {
+            const box = document.getElementById('layeringSuggestionBox');
+            if (!box || topPerfumes.length < 2) return;
+
+            const p1 = topPerfumes[0];
+            const p2 = topPerfumes[1];
+            box.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold text-amber-300 flex items-center gap-1.5">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                        <span>Алхимия наслаивания (Layering-дуэт по фото)</span>
+                    </span>
+                    <span class="text-[10px] font-mono text-emerald-400">Синергия 96%</span>
+                </div>
+                <p class="text-stone-300 leading-relaxed">
+                    Нанесите первым слоем на запястья <strong class="text-white">${p1.brand} ${p1.name}</strong> (база), 
+                    а сверху облаком — <strong class="text-white">${p2.brand} ${p2.name}</strong> (акцент <span class="text-rose-300">${topArch.topNotes[0].toLowerCase()}</span>).
+                </p>
+            `;
+        }
+
+        window.openPerfumeStoryPreview = function() {
+            state.storyTemplate = 'perfume';
+            triggerHaptic('light');
+            document.querySelectorAll('.story-tpl-btn').forEach(b => {
+                const active = b.dataset.template === 'perfume';
+                b.className = active
+                    ? 'story-tpl-btn px-2.5 py-2.5 rounded-xl border border-rose-500 bg-rose-500/15 text-white text-xs font-medium flex flex-col items-center gap-1 transition'
+                    : 'story-tpl-btn px-2.5 py-2.5 rounded-xl border border-stone-800 bg-stone-800/60 hover:bg-stone-800 text-stone-300 text-xs font-medium flex flex-col items-center gap-1 transition';
+            });
+            generateExportCode();
+            renderExportStoryCard();
+            exportModal.classList.remove('hidden');
+        };
+
+        /**
+         * Renders the Proportional Bar and 60-30-10 Stylist Breakdown
+         */
+        function renderProportionAnd603010() {
+            proportionBar.innerHTML = '';
+            const grid = document.getElementById('rule603010Grid');
+            const badge = document.getElementById('stylistVerdictBadge');
+            if (!state.palette.length) return;
+
+            state.palette.forEach((item, index) => {
+                const hex = rgbToHex(item.r, item.g, item.b);
+                const lum = getLuminance(item.r, item.g, item.b);
+                const poetic = getPoeticColorName(item.r, item.g, item.b);
+
+                const segment = document.createElement('div');
+                segment.style.width = `${Math.max(item.percentage, 3)}%`;
+                segment.style.backgroundColor = hex;
+                segment.className = 'h-full flex items-center justify-center overflow-hidden transition-all duration-300 cursor-pointer relative group';
+                segment.title = `${poetic} (${hex}) — ${item.percentage}%`;
+
+                if (item.percentage >= 10) {
+                    const label = document.createElement('span');
+                    label.className = 'text-[10px] font-mono font-bold tracking-tighter';
+                    label.style.color = lum > 145 ? '#0c0a09' : '#ffffff';
+                    label.textContent = `${Math.round(item.percentage)}%`;
+                    segment.appendChild(label);
+                }
+
+                segment.addEventListener('mouseenter', () => highlightPin(item.id, true));
+                segment.addEventListener('mouseleave', () => highlightPin(item.id, false));
+                segment.addEventListener('click', () => {
+                    state.selectedColorIdx = index;
+                    renderPaletteCards();
+                    renderHarmonyWidget();
+                    copyToClipboard(formatColorValue(item), hex, poetic);
+                });
+
+                proportionBar.appendChild(segment);
+            });
+
+            // Group sorted percentages into Base (~60%), Secondary (~30%), and Accent (~10%)
+            const byShare = [...state.palette].sort((a, b) => b.percentage - a.percentage);
+            if (byShare.length >= 3) {
+                const baseColor = byShare[0];
+                const secColor = byShare[1];
+                const accColor = byShare[byShare.length - 1];
+
+                const baseShare = Math.round(baseColor.percentage + (byShare[2] ? byShare[2].percentage * 0.45 : 0));
+                const secShare = Math.round(secColor.percentage + (byShare[3] ? byShare[3].percentage * 0.45 : 0));
+
+                if (baseShare >= 45 && baseShare <= 72) {
+                    badge.textContent = '✨ Идеальный баланс 60–30–10';
+                    badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+                } else {
+                    badge.textContent = '🎨 Многосоставная палитра';
+                    badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30';
+                }
+
+                const roles = [
+                    { role: 'База образа (~60%)', item: baseColor, share: baseColor.percentage },
+                    { role: 'Компаньон (~30%)', item: secColor, share: secColor.percentage },
+                    { role: 'Акцент детали (~10%)', item: accColor, share: accColor.percentage }
+                ];
+
+                grid.innerHTML = roles.map(r => {
+                    const hex = rgbToHex(r.item.r, r.item.g, r.item.b);
+                    const name = getPoeticColorName(r.item.r, r.item.g, r.item.b);
+                    return `
+                        <div class="bg-stone-950/70 border border-stone-800/90 rounded-xl p-2.5 flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg border border-white/15 shrink-0" style="background:${hex}"></div>
+                            <div class="min-w-0">
+                                <div class="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">${r.role}</div>
+                                <div class="text-xs font-medium text-white truncate">${name}</div>
+                                <div class="text-[11px] font-mono text-rose-400">${r.share}% кадра</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function renderPaletteCards() {
+            paletteList.innerHTML = '';
+
+            state.palette.forEach((item, index) => {
+                const hex = rgbToHex(item.r, item.g, item.b);
+                const formatted = formatColorValue(item);
+                const poeticName = getPoeticColorName(item.r, item.g, item.b);
+                const isSelected = state.selectedColorIdx === index;
+
+                const card = document.createElement('div');
+                card.className = `group bg-stone-950/80 hover:bg-stone-800/70 border ${isSelected ? 'border-rose-500/80 ring-1 ring-rose-500/30' : 'border-stone-800/90'} rounded-xl p-2.5 flex items-center justify-between gap-3 transition cursor-pointer`;
+                card.onmouseenter = () => highlightPin(item.id, true);
+                card.onmouseleave = () => highlightPin(item.id, false);
+                card.onclick = () => {
+                    state.selectedColorIdx = index;
+                    triggerHaptic('light');
+                    renderPaletteCards();
+                    renderHarmonyWidget();
+                };
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="relative w-12 h-12 rounded-xl shadow-inner border border-white/15 shrink-0 flex items-center justify-center"
+                             style="background-color: ${hex}">
+                            <span class="px-1.5 py-0.5 rounded bg-black/55 text-white font-mono text-[10px] font-bold">
+                                #${index + 1}
+                            </span>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-sm text-white truncate">${poeticName}</span>
+                                <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-stone-800 text-rose-300 border border-stone-700/80 shrink-0">
+                                    ${item.percentage}%
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-stone-400 mt-0.5">
+                                <span class="font-mono text-stone-300">${formatted}</span>
+                                <span class="text-stone-600">•</span>
+                                <span class="text-[11px] text-rose-400/90 group-hover:underline">С чем сочетать →</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="event.stopPropagation(); copyToClipboard('${formatted}', '${hex}', '${poeticName}')"
+                                class="p-2 rounded-lg bg-stone-800 hover:bg-rose-500 text-stone-300 hover:text-white transition"
+                                title="Скопировать код цвета">
+                            <i data-lucide="copy" class="w-4 h-4"></i>
+                        </button>
+                        ${state.palette.length > 3 ? `
+                        <button onclick="event.stopPropagation(); removePaletteColor('${item.id}')"
+                                class="p-2 rounded-lg bg-stone-800/60 hover:bg-rose-500/20 text-stone-500 hover:text-rose-400 transition"
+                                title="Убрать оттенок">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                        ` : ''}
+                    </div>
+                `;
+                paletteList.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        /**
+         * Pure trigonometric HSL Color Harmony Calculator ("С чем сочетать")
+         */
+        function renderHarmonyWidget() {
+            const container = document.getElementById('harmonyContainer');
+            if (!state.palette.length) return;
+
+            const base = state.palette[Math.min(state.selectedColorIdx, state.palette.length - 1)];
+            const baseHex = rgbToHex(base.r, base.g, base.b);
+            const baseName = getPoeticColorName(base.r, base.g, base.b);
+            const { h, s, l } = rgbToHsl(base.r, base.g, base.b);
+
+            // Compute 3 harmonious companions in HSL space
+            const compAnalog = hslToRgb(h + 32, Math.max(25, Math.min(75, s)), Math.max(30, Math.min(78, l)));
+            const compContrast = hslToRgb(h + 180, Math.max(35, Math.min(70, s + 10)), l > 55 ? 38 : 72);
+            const compTriad = hslToRgb(h + 135, Math.max(22, Math.min(65, s)), Math.max(35, Math.min(75, l)));
+
+            const companions = [
+                { label: 'Мягкая аналогия (Спокойный образ)', rgb: compAnalog },
+                { label: 'Контрастный акцент (Сумка / Обувь)', rgb: compContrast },
+                { label: 'Элегантный дуэт (Сложное сочетание)', rgb: compTriad }
+            ];
+
+            container.innerHTML = `
+                <div class="flex items-center gap-2.5 bg-stone-950/60 border border-stone-800 rounded-xl p-2.5">
+                    <span class="w-5 h-5 rounded-full border border-white/20 shrink-0" style="background:${baseHex}"></span>
+                    <span class="text-xs text-stone-300">Выбран: <strong class="text-white">${baseName}</strong> (${baseHex})</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    ${companions.map(c => {
+                        const hex = rgbToHex(c.rgb.r, c.rgb.g, c.rgb.b);
+                        const name = getPoeticColorName(c.rgb.r, c.rgb.g, c.rgb.b);
+                        return `
+                            <div onclick="copyToClipboard('${hex}', '${hex}', '${name}')"
+                                 class="bg-stone-950/80 hover:bg-stone-800 border border-stone-800 rounded-xl p-2.5 cursor-pointer transition flex flex-col gap-1.5">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 rounded-lg border border-white/15 shrink-0" style="background:${hex}"></div>
+                                    <span class="font-mono text-xs font-bold text-stone-200">${hex}</span>
+                                </div>
+                                <div class="text-xs font-medium text-white truncate">${name}</div>
+                                <div class="text-[10px] text-stone-400 leading-tight">${c.label}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        /**
+         * Matches Blogger's WB/Lamoda/Golden Apple catalog against current photo palette via ΔE
+         */
+        function renderMatchedBloggerProducts() {
+            const grid = document.getElementById('matchedProductsGrid');
+            if (!state.palette.length) return;
+
+            const scored = bloggerProducts.map(prod => {
+                const prodRgb = hexToRgb(prod.hex);
+                let bestDist = Infinity;
+                let matchedPaletteColor = state.palette[0];
+
+                for (let c of state.palette) {
+                    const d = colorDistance(prodRgb, c);
+                    if (d < bestDist) {
+                        bestDist = d;
+                        matchedPaletteColor = c;
+                    }
+                }
+                const matchScore = Math.max(72, Math.min(99, Math.round(100 - bestDist * 0.45)));
+                return {
+                    ...prod,
+                    matchScore,
+                    bestDist,
+                    matchedHex: rgbToHex(matchedPaletteColor.r, matchedPaletteColor.g, matchedPaletteColor.b),
+                    poeticShade: getPoeticColorName(prodRgb.r, prodRgb.g, prodRgb.b)
+                };
+            });
+
+            scored.sort((a, b) => a.bestDist - b.bestDist);
+            const topMatches = scored.slice(0, 4);
+
+            grid.innerHTML = topMatches.map(item => `
+                <div class="bg-stone-950/85 border border-stone-800/90 hover:border-rose-500/40 rounded-xl p-3 flex flex-col justify-between gap-2.5 transition">
+                    <div class="flex items-start justify-between gap-2.5">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="relative w-10 h-10 rounded-xl border border-white/15 shrink-0 shadow-inner" style="background:${item.hex}">
+                                <span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border border-stone-950" style="background:${item.matchedHex}" title="Цвет с вашего фото"></span>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-stone-800 text-stone-300">${item.store}</span>
+                                    <span class="text-[10px] font-mono text-emerald-400 font-semibold">${item.matchScore}% в тон</span>
+                                </div>
+                                <h4 class="text-xs font-semibold text-white truncate mt-1" title="${item.title}">${item.title}</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 pt-1.5 border-t border-stone-800/70 text-xs">
+                        <span class="text-[11px] text-stone-400 truncate">Оттенок: <strong class="text-stone-200">${item.poeticShade}</strong></span>
+                        <button onclick="copyToClipboard('${item.sku}', '${item.hex}', '${item.title}')"
+                                class="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white font-mono text-[11px] font-medium transition shrink-0">
+                            ${item.sku}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function highlightPin(id, active) {
+            state.activeHighlightId = active ? id : null;
+            const pin = pinsLayer.querySelector(`[data-id="${id}"]`);
+            if (pin) {
+                if (active) pin.classList.add('active-pin', 'ring-4', 'ring-rose-500');
+                else pin.classList.remove('active-pin', 'ring-4', 'ring-rose-500');
+            }
+        }
+
+        window.removePaletteColor = function(id) {
+            state.palette = state.palette.filter(c => c.id !== id);
+            state.selectedColorIdx = 0;
+            recalculatePaletteShares();
+            renderAll();
+        };
+
+        /**
+         * Interactive 8x Pixel Loupe with Poetic Shade preview
+         */
+        function updateLoupeAtClientPos(clientX, clientY) {
+            const rect = mainCanvas.getBoundingClientRect();
+            const stageRect = document.getElementById('canvasStage').getBoundingClientRect();
+
+            if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+                loupe.classList.add('hidden');
+                return;
+            }
+
+            const normX = Math.min(0.999, Math.max(0, (clientX - rect.left) / rect.width));
+            const normY = Math.min(0.999, Math.max(0, (clientY - rect.top) / rect.height));
+            const px = Math.floor(normX * mainCanvas.width);
+            const py = Math.floor(normY * mainCanvas.height);
+
+            const smoothed = sampleCanvasColor(px, py);
+            const hex = rgbToHex(smoothed.r, smoothed.g, smoothed.b);
+            const poetic = getPoeticColorName(smoothed.r, smoothed.g, smoothed.b);
+
+            document.getElementById('hoverColorPreview').style.backgroundColor = hex;
+            document.getElementById('hoverColorCoords').textContent = poetic;
+            document.getElementById('hoverColorValues').textContent = `${hex} • Пипетка ${state.kernelSize}×${state.kernelSize}`;
+
+            loupe.classList.remove('hidden');
+            const loupeX = clientX - stageRect.left - 64;
+            const loupeY = clientY - stageRect.top - 144;
+            loupe.style.left = `${Math.max(8, Math.min(stageRect.width - 136, loupeX))}px`;
+            loupe.style.top = `${Math.max(8, loupeY)}px`;
+
+            loupeCtx.imageSmoothingEnabled = false;
+            loupeCtx.clearRect(0, 0, 128, 128);
+            const zoomRadius = 7;
+            const srcSize = zoomRadius * 2 + 1;
+            loupeCtx.drawImage(
+                mainCanvas,
+                px - zoomRadius, py - zoomRadius, srcSize, srcSize,
+                0, 0, 128, 128
+            );
+
+            const pxScale = 128 / srcSize;
+            const reticlePx = Math.round(state.kernelSize * pxScale);
+            loupeReticle.style.width = `${reticlePx}px`;
+            loupeReticle.style.height = `${reticlePx}px`;
+
+            loupeHexBadge.textContent = poetic;
+        }
+
+        mainCanvas.addEventListener('mousemove', (e) => {
+            updateLoupeAtClientPos(e.clientX, e.clientY);
+        });
+
+        mainCanvas.addEventListener('mouseleave', () => {
+            if (!state.draggingPinId) loupe.classList.add('hidden');
+        });
+
+        mainCanvas.addEventListener('click', (e) => {
+            const rect = mainCanvas.getBoundingClientRect();
+            const normX = Math.min(0.995, Math.max(0.005, (e.clientX - rect.left) / rect.width));
+            const normY = Math.min(0.995, Math.max(0.005, (e.clientY - rect.top) / rect.height));
+            const px = Math.floor(normX * mainCanvas.width);
+            const py = Math.floor(normY * mainCanvas.height);
+            const smoothed = sampleCanvasColor(px, py);
+
+            const newColor = {
+                r: smoothed.r,
+                g: smoothed.g,
+                b: smoothed.b,
+                x: normX,
+                y: normY,
+                count: 0,
+                percentage: 0,
+                id: 'pin-custom-' + Date.now()
+            };
+            state.palette.push(newColor);
+            state.selectedColorIdx = state.palette.length - 1;
+            recalculatePaletteShares();
+            renderAll();
+            const poetic = getPoeticColorName(newColor.r, newColor.g, newColor.b);
+            copyToClipboard(formatColorValue(newColor), rgbToHex(newColor.r, newColor.g, newColor.b), poetic);
+        });
+
+        /**
+         * Procedural Lifestyle Artwork Generator (Coffee, OOTD, Flowers, Cozy Home)
+         */
+        window.loadPresetSample = function(type) {
+            const w = 800;
+            const h = 600;
+            mainCanvas.width = w;
+            mainCanvas.height = h;
+            document.getElementById('imageDimensions').textContent = `${w} × ${h} px`;
+
+            if (type === 'coffee') {
+                // Warm linen table, iced caramel latte, croissant & eucalyptus
+                ctx.fillStyle = '#EAE0D2';
+                ctx.fillRect(0, 0, w, h);
+
+                // Warm sunlight shadow diagonal
+                ctx.fillStyle = '#D8C6B4';
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(w * 0.65, 0);
+                ctx.lineTo(w * 0.25, h);
+                ctx.lineTo(0, h);
+                ctx.fill();
+
+                // Ceramic plate
+                ctx.fillStyle = '#F8F1E5';
+                ctx.beginPath();
+                ctx.arc(w * 0.36, h * 0.56, 150, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Golden flaky croissant
+                ctx.fillStyle = '#C6864E';
+                ctx.beginPath();
+                ctx.ellipse(w * 0.36, h * 0.55, 95, 52, -0.25, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#9C623E';
+                ctx.beginPath();
+                ctx.ellipse(w * 0.36, h * 0.55, 65, 32, -0.25, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Latte cup & espresso art
+                ctx.fillStyle = '#3E2920';
+                ctx.beginPath();
+                ctx.arc(w * 0.7, h * 0.42, 95, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#AF8A6C';
+                ctx.beginPath();
+                ctx.arc(w * 0.7, h * 0.42, 78, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#F8F1E5';
+                ctx.beginPath();
+                ctx.arc(w * 0.7, h * 0.40, 34, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eucalyptus sprig
+                ctx.fillStyle = '#8EA592';
+                ctx.beginPath();
+                ctx.ellipse(w * 0.22, h * 0.22, 48, 24, 0.4, 0, Math.PI * 2);
+                ctx.ellipse(w * 0.31, h * 0.18, 42, 22, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+
+            } else if (type === 'ootd') {
+                // OOTD flatlay: Cashmere trench, French denim, Burgundy bag, Milk sweater
+                ctx.fillStyle = '#F5F5F4';
+                ctx.fillRect(0, 0, w, h);
+
+                // Trench coat block
+                ctx.fillStyle = '#BDA285';
+                ctx.fillRect(40, 40, 360, 520);
+
+                // Cream knit sweater
+                ctx.fillStyle = '#F8F1E5';
+                ctx.fillRect(280, 70, 240, 260);
+
+                // French blue denim jeans
+                ctx.fillStyle = '#4A7098';
+                ctx.fillRect(430, 250, 320, 310);
+
+                // Burgundy leather bag accent
+                ctx.fillStyle = '#621626';
+                ctx.beginPath();
+                ctx.roundRect(240, 360, 190, 140, 28);
+                ctx.fill();
+
+            } else if (type === 'flowers') {
+                // Peonies, dusty rose silk, eucalyptus & berry lipstick
+                const bg = ctx.createLinearGradient(0, 0, w, h);
+                bg.addColorStop(0, '#F4DBD8');
+                bg.addColorStop(1, '#EAE0D2');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, w, h);
+
+                // Dusty rose peony blooms
+                ctx.fillStyle = '#E8A5B2';
+                ctx.beginPath();
+                ctx.arc(w * 0.38, h * 0.45, 130, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#C48A91';
+                ctx.beginPath();
+                ctx.arc(w * 0.58, h * 0.38, 105, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Deep berry core
+                ctx.fillStyle = '#8A1C30';
+                ctx.beginPath();
+                ctx.arc(w * 0.48, h * 0.68, 65, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Sage leaves
+                ctx.fillStyle = '#8EA592';
+                ctx.fillRect(w * 0.15, h * 0.65, 160, 95);
+
+            } else {
+                // Cozy Home Decor: Terracotta vase, olive throw, milk wall, warm wood
+                ctx.fillStyle = '#F8F1E5';
+                ctx.fillRect(0, 0, w, h * 0.68);
+                ctx.fillStyle = '#764E38';
+                ctx.fillRect(0, h * 0.68, w, h * 0.32);
+
+                // Olive sofa / linen throw
+                ctx.fillStyle = '#76804E';
+                ctx.beginPath();
+                ctx.roundRect(70, h * 0.38, 380, 240, 24);
+                ctx.fill();
+
+                // Terracotta ceramic vase
+                ctx.fillStyle = '#C26248';
+                ctx.beginPath();
+                ctx.arc(w * 0.74, h * 0.54, 98, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Hydrangea blue pillow
+                ctx.fillStyle = '#A4C6E4';
+                ctx.beginPath();
+                ctx.roundRect(140, h * 0.42, 145, 135, 20);
+                ctx.fill();
+            }
+
+            analyzeImagePalette();
+        };
+
+        function handleImageFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const maxDim = 1400;
+                    let w = img.naturalWidth;
+                    let h = img.naturalHeight;
+                    if (w > maxDim || h > maxDim) {
+                        const ratio = Math.min(maxDim / w, maxDim / h);
+                        w = Math.round(w * ratio);
+                        h = Math.round(h * ratio);
+                    }
+                    mainCanvas.width = w;
+                    mainCanvas.height = h;
+                    ctx.drawImage(img, 0, 0, w, h);
+                    document.getElementById('imageDimensions').textContent = `${img.naturalWidth} × ${img.naturalHeight} px`;
+                    triggerHaptic('success');
+                    analyzeImagePalette();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) handleImageFile(e.target.files[0]);
+        });
+
+        const dropOverlay = document.getElementById('dropOverlay');
+        window.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropOverlay.classList.remove('hidden');
+        });
+        dropOverlay.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropOverlay.classList.add('hidden');
+        });
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropOverlay.classList.add('hidden');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) handleImageFile(e.dataTransfer.files[0]);
+        });
+
+        window.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let item of items) {
+                if (item.type.indexOf('image') === 0) {
+                    handleImageFile(item.getAsFile());
+                    break;
+                }
+            }
+        });
+
+        // Blogger Product Form Controls
+        document.getElementById('toggleAddProductBtn').addEventListener('click', () => {
+            const form = document.getElementById('addProductForm');
+            form.classList.toggle('hidden');
+            if (state.palette.length > 0) {
+                const topHex = rgbToHex(state.palette[0].r, state.palette[0].g, state.palette[0].b);
+                document.getElementById('newProdColor').value = topHex;
+            }
+        });
+
+        document.getElementById('saveNewProductBtn').addEventListener('click', () => {
+            const title = document.getElementById('newProdTitle').value.trim() || 'Новая находка блогера';
+            const sku = document.getElementById('newProdSku').value.trim() || 'WB 24910294';
+            const hex = document.getElementById('newProdColor').value.toUpperCase();
+            bloggerProducts.unshift({
+                id: 'custom-' + Date.now(),
+                title,
+                store: sku.split(' ')[0] || 'WB',
+                sku,
+                hex,
+                category: 'Выбор блогера'
+            });
+            document.getElementById('newProdTitle').value = '';
+            document.getElementById('addProductForm').classList.add('hidden');
+            triggerHaptic('success');
+            renderMatchedBloggerProducts();
+            copyToClipboard(sku, hex, `Добавлено в витрину: ${title}`);
+        });
+
+        // Sync Blog Handle inputs
+        const blogHandleInput = document.getElementById('blogHandleInput');
+        const storyHandleModalInput = document.getElementById('storyHandleModalInput');
+
+        blogHandleInput.addEventListener('input', (e) => {
+            state.blogHandle = e.target.value || '@my_lifestyle_blog';
+            storyHandleModalInput.value = state.blogHandle;
+        });
+
+        storyHandleModalInput.addEventListener('input', (e) => {
+            state.blogHandle = e.target.value || '@my_lifestyle_blog';
+            blogHandleInput.value = state.blogHandle;
+            renderExportStoryCard();
+        });
+
+        document.getElementById('storyTitleInput').addEventListener('input', (e) => {
+            state.storyTitle = e.target.value || 'Палитра моего дня ✨';
+            renderExportStoryCard();
+        });
+
+        // Weather Dosage & Blogger Promo Code Listeners
+        document.getElementById('bloggerPromoInput').addEventListener('input', (e) => {
+            state.bloggerPromo = e.target.value.trim() || 'БЛОГ10';
+            renderOlfactorySommelier();
+        });
+
+        const weatherTempSlider = document.getElementById('weatherTempSlider');
+        const weatherTempLabel = document.getElementById('weatherTempLabel');
+        weatherTempSlider.addEventListener('input', (e) => {
+            state.weatherTemp = parseInt(e.target.value, 10);
+            const sign = state.weatherTemp > 0 ? `+${state.weatherTemp}` : state.weatherTemp;
+            weatherTempLabel.textContent = `${sign}°C`;
+            renderOlfactorySommelier();
+        });
+
+        document.querySelectorAll('.occasion-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.occasion = btn.dataset.occasion;
+                triggerHaptic('light');
+                document.querySelectorAll('.occasion-btn').forEach(b => {
+                    const active = b.dataset.occasion === state.occasion;
+                    b.className = active
+                        ? 'occasion-btn px-2 py-1 rounded-lg bg-rose-500 text-white text-[11px] font-medium transition'
+                        : 'occasion-btn px-2 py-1 rounded-lg text-[11px] font-medium text-stone-400 hover:text-white transition';
+                });
+                renderOlfactorySommelier();
+            });
+        });
+
+        // Algorithm Selector Buttons
+        document.querySelectorAll('.algo-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.algorithm = btn.dataset.algo;
+                triggerHaptic('light');
+                document.querySelectorAll('.algo-btn').forEach(b => {
+                    const isSelected = b.dataset.algo === state.algorithm;
+                    b.className = isSelected
+                        ? 'algo-btn active-algo text-left p-2.5 rounded-xl border border-rose-500 bg-rose-500/10 transition flex flex-col justify-between'
+                        : 'algo-btn text-left p-2.5 rounded-xl border border-stone-800 bg-stone-800/40 hover:bg-stone-800 transition flex flex-col justify-between';
+                });
+                analyzeImagePalette();
+            });
+        });
+
+        // Sliders
+        const colorCountSlider = document.getElementById('colorCountSlider');
+        const colorCountValue = document.getElementById('colorCountValue');
+        colorCountSlider.addEventListener('input', (e) => {
+            state.colorCount = parseInt(e.target.value, 10);
+            colorCountValue.textContent = state.colorCount;
+            analyzeImagePalette();
+        });
+
+        const deltaSlider = document.getElementById('deltaSlider');
+        const deltaValue = document.getElementById('deltaValue');
+        deltaSlider.addEventListener('input', (e) => {
+            state.minDelta = parseInt(e.target.value, 10);
+            deltaValue.textContent = state.minDelta;
+            analyzeImagePalette();
+        });
+
+        document.getElementById('sortSelect').addEventListener('change', (e) => {
+            state.sortBy = e.target.value;
+            sortPalette();
+            renderAll();
+        });
+
+        document.querySelectorAll('.format-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.activeFormat = btn.dataset.format;
+                document.querySelectorAll('.format-btn').forEach(b => {
+                    const active = b.dataset.format === state.activeFormat;
+                    b.className = active
+                        ? 'format-btn px-2 py-0.5 rounded-md bg-rose-500 text-white font-mono text-[11px] font-medium transition'
+                        : 'format-btn px-2 py-0.5 rounded-md text-stone-400 hover:text-white font-mono text-[11px] font-medium transition';
+                });
+                renderPaletteCards();
+            });
+        });
+
+        document.getElementById('togglePinsCheckbox').addEventListener('change', (e) => {
+            state.showPins = e.target.checked;
+            renderPinsOnPhoto();
+        });
+
+        document.querySelectorAll('.kernel-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.kernelSize = parseInt(btn.dataset.kernel, 10);
+                triggerHaptic('light');
+                document.querySelectorAll('.kernel-btn').forEach(b => {
+                    const active = parseInt(b.dataset.kernel, 10) === state.kernelSize;
+                    b.className = active
+                        ? 'kernel-btn px-2 py-0.5 rounded-md bg-rose-500 text-white font-mono text-[11px] font-medium transition'
+                        : 'kernel-btn px-2 py-0.5 rounded-md text-stone-400 hover:text-white font-mono text-[11px] font-medium transition';
+                });
+                state.palette.forEach(item => {
+                    const px = Math.floor(item.x * mainCanvas.width);
+                    const py = Math.floor(item.y * mainCanvas.height);
+                    const smoothed = sampleCanvasColor(px, py);
+                    item.r = smoothed.r;
+                    item.g = smoothed.g;
+                    item.b = smoothed.b;
+                });
+                recalculatePaletteShares();
+                renderAll();
+            });
+        });
+
+        document.getElementById('addCustomPinBtn').addEventListener('click', () => {
+            const normX = 0.25 + Math.random() * 0.5;
+            const normY = 0.25 + Math.random() * 0.5;
+            const px = Math.floor(normX * mainCanvas.width);
+            const py = Math.floor(normY * mainCanvas.height);
+            const smoothed = sampleCanvasColor(px, py);
+            state.palette.push({
+                r: smoothed.r,
+                g: smoothed.g,
+                b: smoothed.b,
+                x: normX,
+                y: normY,
+                count: 0,
+                percentage: 0,
+                id: 'pin-custom-' + Date.now()
+            });
+            recalculatePaletteShares();
+            renderAll();
+        });
+
+        document.getElementById('recalculateBtn').addEventListener('click', () => {
+            triggerHaptic('light');
+            analyzeImagePalette();
+        });
+
+        document.getElementById('copyAllHexBtn').addEventListener('click', () => {
+            const allCodes = state.palette.map(c => `${getPoeticColorName(c.r, c.g, c.b)} (${rgbToHex(c.r, c.g, c.b)})`).join(', ');
+            copyToClipboard(allCodes, rgbToHex(state.palette[0].r, state.palette[0].g, state.palette[0].b), 'Вся палитра скопирована');
+        });
+
+        window.copyToClipboard = function(text, previewHex = '#f43f5e', customLabel = null) {
+            triggerHaptic('success');
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+            } catch (err) {}
+            document.body.removeChild(textarea);
+
+            const toast = document.getElementById('toast');
+            document.getElementById('toastSwatch').style.backgroundColor = previewHex;
+            document.getElementById('toastText').textContent = customLabel ? `${customLabel}: ${text}` : `Скопировано: ${text}`;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            clearTimeout(window.toastTimer);
+            window.toastTimer = setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2400);
+        };
+
+        /**
+         * High-Resolution 9:16 Stories Card Generator (720 × 1280 px)
+         */
+        const exportModal = document.getElementById('exportModal');
+        const exportCodeArea = document.getElementById('exportCodeArea');
+        const exportCardCanvas = document.getElementById('exportCardCanvas');
+
+        function renderExportStoryCard() {
+            const W = 720;
+            const H = 1280;
+            exportCardCanvas.width = W;
+            exportCardCanvas.height = H;
+            const c = exportCardCanvas.getContext('2d');
+
+            const tpl = state.storyTemplate;
+            const isDark = tpl === 'editorial';
+
+            // 1. Background Fill
+            c.fillStyle = isDark ? '#0c0a09' : (tpl === 'polaroid' ? '#EFECE6' : '#FAF6F0');
+            c.fillRect(0, 0, W, H);
+
+            // Soft ambient decorative glow from top palette color
+            if (state.palette.length > 0) {
+                const topC = state.palette[0];
+                const grad = c.createRadialGradient(W * 0.5, H * 0.25, 40, W * 0.5, H * 0.25, 520);
+                grad.addColorStop(0, `rgba(${topC.r}, ${topC.g}, ${topC.b}, ${isDark ? 0.22 : 0.16})`);
+                grad.addColorStop(1, 'transparent');
+                c.fillStyle = grad;
+                c.fillRect(0, 0, W, H);
+            }
+
+            // 2. Header Title
+            c.textAlign = 'center';
+            c.fillStyle = isDark ? '#FAFAF9' : '#1C1917';
+            c.font = 'bold 34px "Inter", sans-serif';
+            c.fillText(state.storyTitle, W / 2, 78);
+
+            c.fillStyle = isDark ? '#A8A29E' : '#78716C';
+            c.font = '500 17px "Inter", sans-serif';
+            c.fillText('ЭСТЕТИЧНЫЙ РАЗБОР ОТТЕНКОВ И АРОМАТА', W / 2, 112);
+
+            // 3. Source Photo Frame
+            const pad = 48;
+            const photoBoxW = W - pad * 2;
+            const photoBoxH = tpl === 'polaroid' ? 490 : 510;
+            const photoY = 142;
+
+            if (tpl === 'polaroid') {
+                // White Polaroid Card Container
+                c.fillStyle = '#FFFFFF';
+                c.shadowColor = 'rgba(0,0,0,0.10)';
+                c.shadowBlur = 30;
+                c.beginPath();
+                c.roundRect(pad - 12, photoY - 12, photoBoxW + 24, photoBoxH + 86, 16);
+                c.fill();
+                c.shadowBlur = 0;
+            }
+
+            // Draw image inside rounded rect using clipping
+            c.save();
+            c.beginPath();
+            c.roundRect(pad, photoY, photoBoxW, photoBoxH, tpl === 'polaroid' ? 8 : 24);
+            c.clip();
+
+            // Cover fit image
+            const imgRatio = mainCanvas.width / mainCanvas.height;
+            const boxRatio = photoBoxW / photoBoxH;
+            let dw = photoBoxW, dh = photoBoxH, dx = pad, dy = photoY;
+            if (imgRatio > boxRatio) {
+                dw = photoBoxH * imgRatio;
+                dx = pad - (dw - photoBoxW) / 2;
+            } else {
+                dh = photoBoxW / imgRatio;
+                dy = photoY - (dh - photoBoxH) / 2;
+            }
+            c.drawImage(mainCanvas, dx, dy, dw, dh);
+            c.restore();
+
+            // 4. Palette Swatches OR Perfume Olfactory Pyramid Card
+            if (tpl === 'perfume' && state.olfactoryProfile) {
+                const prof = state.olfactoryProfile;
+                const startY = photoY + photoBoxH + 30;
+
+                // Family Subtitle Banner
+                c.fillStyle = '#1C1917';
+                c.beginPath();
+                c.roundRect(pad, startY, photoBoxW, 82, 18);
+                c.fill();
+
+                c.textAlign = 'center';
+                c.fillStyle = '#FBBF24';
+                c.font = 'bold 14px "JetBrains Mono", monospace';
+                c.fillText('ОЛЬФАКТОРНАЯ ПИРАМИДА МОЕГО КАДРА', W / 2, startY + 28);
+
+                c.fillStyle = '#FFFFFF';
+                c.font = 'bold 21px "Inter", sans-serif';
+                c.fillText(prof.poeticTitle, W / 2, startY + 58);
+
+                const tiers = [
+                    { label: 'ВЕРХНИЕ НОТЫ (10%)', color: prof.topColor, notes: prof.topNotes.join(' • ') },
+                    { label: 'НОТЫ СЕРДЦА (30%)', color: prof.heartColor, notes: prof.heartNotes.join(' • ') },
+                    { label: 'БАЗА И ШЛЕЙФ (60%)', color: prof.baseColor, notes: prof.baseNotes.join(' • ') }
+                ];
+
+                tiers.forEach((t, i) => {
+                    const y = startY + 100 + i * 92;
+                    const hex = rgbToHex(t.color.r, t.color.g, t.color.b);
+
+                    c.fillStyle = '#FFFFFF';
+                    c.beginPath();
+                    c.roundRect(pad, y, photoBoxW, 78, 16);
+                    c.fill();
+
+                    c.fillStyle = hex;
+                    c.beginPath();
+                    c.arc(pad + 38, y + 39, 22, 0, Math.PI * 2);
+                    c.fill();
+
+                    c.textAlign = 'left';
+                    c.fillStyle = '#78716C';
+                    c.font = 'bold 13px "JetBrains Mono", monospace';
+                    c.fillText(`${t.label} — ${getPoeticColorName(t.color.r, t.color.g, t.color.b).toUpperCase()}`, pad + 74, y + 29);
+
+                    c.fillStyle = '#1C1917';
+                    c.font = 'bold 19px "Inter", sans-serif';
+                    c.fillText(t.notes, pad + 74, y + 56);
+                });
+
+                // Matched Top Perfume Badge
+                const topP = prof.topPerfumes[0];
+                const pY = startY + 386;
+                c.fillStyle = '#FFF1F2';
+                c.beginPath();
+                c.roundRect(pad, pY, photoBoxW, 76, 16);
+                c.fill();
+
+                c.textAlign = 'left';
+                c.fillStyle = '#E11D48';
+                c.font = 'bold 14px "JetBrains Mono", monospace';
+                c.fillText(`ИДЕАЛЬНЫЙ ПАРФЮМ (${topP.matchPercent}% СОВПАДЕНИЕ ДНК):`, pad + 24, pY + 28);
+
+                c.fillStyle = '#1C1917';
+                c.font = 'bold 22px "Inter", sans-serif';
+                c.fillText(`${topP.brand} — ${topP.name}`, pad + 24, pY + 56);
+
+                c.textAlign = 'right';
+                c.fillStyle = '#E11D48';
+                c.font = 'bold 17px "JetBrains Mono", monospace';
+                c.fillText(`Промо: ${state.bloggerPromo}`, W - pad - 24, pY + 55);
+            } else {
+                const listStartY = tpl === 'polaroid' ? photoY + photoBoxH + 98 : photoY + photoBoxH + 38;
+                const maxColors = Math.min(state.palette.length, 6);
+                const rowH = 76;
+
+                for (let i = 0; i < maxColors; i++) {
+                    const item = state.palette[i];
+                    const hex = rgbToHex(item.r, item.g, item.b);
+                    const poetic = getPoeticColorName(item.r, item.g, item.b);
+                    const y = listStartY + i * rowH;
+
+                    // Row card background
+                    c.fillStyle = isDark ? '#1C1917' : '#FFFFFF';
+                    c.beginPath();
+                    c.roundRect(pad, y, photoBoxW, 62, 16);
+                    c.fill();
+
+                    // Color Circle / Pill
+                    c.fillStyle = hex;
+                    c.beginPath();
+                    c.arc(pad + 34, y + 31, 20, 0, Math.PI * 2);
+                    c.fill();
+
+                    // Poetic Name
+                    c.textAlign = 'left';
+                    c.fillStyle = isDark ? '#F5F5F4' : '#1C1917';
+                    c.font = 'bold 21px "Inter", sans-serif';
+                    c.fillText(poetic, pad + 68, y + 29);
+
+                    // HEX subtitle
+                    c.fillStyle = isDark ? '#A8A29E' : '#78716C';
+                    c.font = '500 15px "JetBrains Mono", monospace';
+                    c.fillText(hex, pad + 68, y + 50);
+
+                    // Share percentage badge on right
+                    c.textAlign = 'right';
+                    c.fillStyle = isDark ? '#FB7185' : '#E11D48';
+                    c.font = 'bold 19px "JetBrains Mono", monospace';
+                    c.fillText(`${item.percentage}%`, W - pad - 20, y + 38);
+                }
+            }
+
+            // 5. Viral Blog Signature Footer
+            const footerY = H - 56;
+            c.textAlign = 'center';
+            c.fillStyle = isDark ? '#F43F5E' : '#E11D48';
+            c.font = 'bold 22px "Inter", sans-serif';
+            c.fillText(`Палитра собрана в ${state.blogHandle}`, W / 2, footerY);
+
+            c.fillStyle = isDark ? '#78716C' : '#A8A29E';
+            c.font = '500 14px "Inter", sans-serif';
+            c.fillText('ChromaStyle • Точная палитра и парфюмерный сомелье без ИИ', W / 2, footerY + 24);
+        }
+
+        function generateExportCode() {
+            if (state.activeCodeTab === 'css') {
+                const lines = [':root {'];
+                state.palette.forEach((c, i) => {
+                    const hex = rgbToHex(c.r, c.g, c.b);
+                    lines.push(`  --color-${i + 1}: ${hex}; /* ${c.percentage}% — ${getPoeticColorName(c.r, c.g, c.b)} */`);
+                });
+                lines.push('}');
+                exportCodeArea.value = lines.join('\n');
+            } else if (state.activeCodeTab === 'json') {
+                const data = state.palette.map((c, i) => ({
+                    index: i + 1,
+                    poeticName: getPoeticColorName(c.r, c.g, c.b),
+                    hex: rgbToHex(c.r, c.g, c.b),
+                    percentage: c.percentage
+                }));
+                exportCodeArea.value = JSON.stringify(data, null, 2);
+            } else {
+                const lines = ['// tailwind.config.js', 'colors: {', '  lifestyle: {'];
+                state.palette.forEach((c, i) => {
+                    lines.push(`    '${(i + 1) * 100}': '${rgbToHex(c.r, c.g, c.b)}', // ${getPoeticColorName(c.r, c.g, c.b)}`);
+                });
+                lines.push('  }', '}');
+                exportCodeArea.value = lines.join('\n');
+            }
+        }
+
+        document.getElementById('openStoriesModalBtn').addEventListener('click', () => {
+            triggerHaptic('light');
+            generateExportCode();
+            renderExportStoryCard();
+            exportModal.classList.remove('hidden');
+        });
+
+        document.getElementById('closeExportBtn').addEventListener('click', () => {
+            exportModal.classList.add('hidden');
+        });
+
+        document.querySelectorAll('.story-tpl-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.storyTemplate = btn.dataset.template;
+                triggerHaptic('light');
+                document.querySelectorAll('.story-tpl-btn').forEach(b => {
+                    const active = b.dataset.template === state.storyTemplate;
+                    b.className = active
+                        ? 'story-tpl-btn px-2.5 py-2.5 rounded-xl border border-rose-500 bg-rose-500/15 text-white text-xs font-medium flex flex-col items-center gap-1 transition'
+                        : 'story-tpl-btn px-2.5 py-2.5 rounded-xl border border-stone-800 bg-stone-800/60 hover:bg-stone-800 text-stone-300 text-xs font-medium flex flex-col items-center gap-1 transition';
+                });
+                renderExportStoryCard();
+            });
+        });
+
+        document.querySelectorAll('.code-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.activeCodeTab = btn.dataset.code;
+                document.querySelectorAll('.code-tab-btn').forEach(b => {
+                    const active = b.dataset.code === state.activeCodeTab;
+                    b.className = active
+                        ? 'code-tab-btn px-2 py-0.5 rounded-md bg-rose-500 text-white text-[11px] font-medium'
+                        : 'code-tab-btn px-2 py-0.5 rounded-md text-stone-400 hover:text-white text-[11px] font-medium';
+                });
+                generateExportCode();
+            });
+        });
+
+        document.getElementById('copyExportCodeBtn').addEventListener('click', () => {
+            copyToClipboard(exportCodeArea.value, '#f43f5e', 'Код скопирован');
+        });
+
+        // Native Mobile Share (for Telegram Stories / iOS / Android) with PNG download fallback
+        document.getElementById('shareOrDownloadStoryBtn').addEventListener('click', async () => {
+            triggerHaptic('success');
+            exportCardCanvas.toBlob(async (blob) => {
+                if (!blob) return;
+                const file = new File([blob], `story-palette-${Date.now()}.png`, { type: 'image/png' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: state.storyTitle,
+                            text: `Палитра собрана в ${state.blogHandle}`
+                        });
+                        return;
+                    } catch (err) {}
+                }
+                // Fallback direct download
+                const link = document.createElement('a');
+                link.download = `chromastyle-story-9x16-${Date.now()}.png`;
+                link.href = URL.createObjectURL(blob);
+                link.click();
+            }, 'image/png');
+        });
+
+        // Initialize with default Morning Latte preset on load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadPresetSample('coffee');
+        });
+    </script>
+</body>
+</html>
