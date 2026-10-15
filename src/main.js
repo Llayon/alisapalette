@@ -712,6 +712,15 @@ $('closeExportBtn').addEventListener('click', closeStudio);
 exportModal.addEventListener('click', (e) => { if (e.target === exportModal) closeStudio(); });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !exportModal.classList.contains('hidden')) closeStudio();
+  // Лёгкая Tab-ловушка открытой студии: фокус циклически внутри модалки.
+  if (e.key === 'Tab' && !exportModal.classList.contains('hidden')) {
+    const items = [...exportModal.querySelectorAll('button, input, select, textarea')].filter((el) => !el.disabled && el.offsetParent !== null);
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
 });
 document.querySelectorAll('[data-story-template]').forEach((btn) => {
   btn.addEventListener('click', () => {

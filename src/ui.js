@@ -176,18 +176,24 @@ export function propose603010(sorted) {
 
 // ---------- palette cards ----------
 
+let lastCardSig = '';
 export function renderPaletteCards(listEl, onSelect, onCopy, onRemove) {
   listEl.innerHTML = '';
   if (!state.palette.length) {
     listEl.innerHTML = '<div class="notice">Палитра появится после загрузки фото.</div>';
+    lastCardSig = '';
     return;
   }
+  // Анимация появления — только при смене состава палитры, не при каждом рендере.
+  const sig = state.palette.map((c) => c.id + c.r + ',' + c.g + ',' + c.b).join('|');
+  const animate = sig !== lastCardSig;
+  lastCardSig = sig;
   state.palette.forEach((item, index) => {
     const hex = rgbToHex(item.r, item.g, item.b);
     const poetic = getPoeticColorName(item.r, item.g, item.b);
     const sel = state.selectedColorId === item.id;
     const card = document.createElement('div');
-    card.className = 'pal-card' + (sel ? ' sel' : '');
+    card.className = 'pal-card' + (sel ? ' sel' : '') + (animate ? ' anim' : '');
     card.setAttribute('role', 'listitem');
     const roleLabel = item.role === 'dominant' ? 'Основной' : item.role === 'accent' ? 'Акцент' : 'Второстепенный';
     card.innerHTML = `
