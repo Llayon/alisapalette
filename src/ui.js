@@ -94,6 +94,19 @@ export function renderProportion(barEl, legendEl, gridEl, badgeEl, onSelect) {
     barEl.appendChild(seg);
   }
 
+  // Компактная копия полосы в карточку палитры (без подписей).
+  const mini = document.getElementById('miniPropBar');
+  if (mini) {
+    mini.innerHTML = '';
+    for (const item of sorted) {
+      const mseg = document.createElement('div');
+      mseg.style.flex = `0 0 ${item.percentage}%`;
+      mseg.style.width = `${item.percentage}%`;
+      mseg.style.backgroundColor = rgbToHex(item.r, item.g, item.b);
+      mini.appendChild(mseg);
+    }
+  }
+
   // Выноски-подписи для маленьких сегментов (вместо искажения ширины).
   for (const item of sorted) {
     const hex = rgbToHex(item.r, item.g, item.b);
@@ -163,32 +176,44 @@ export function propose603010(sorted) {
 
 // ---------- palette cards ----------
 
+let lastCardSig = '';
 export function renderPaletteCards(listEl, onSelect, onCopy, onRemove) {
   listEl.innerHTML = '';
   if (!state.palette.length) {
     listEl.innerHTML = '<div class="notice">Палитра появится после загрузки фото.</div>';
+    lastCardSig = '';
     return;
   }
+  // Анимация появления — только при смене состава палитры, не при каждом рендере.
+  const sig = state.palette.map((c) => c.id + c.r + ',' + c.g + ',' + c.b).join('|');
+  const animate = sig !== lastCardSig;
+  lastCardSig = sig;
   state.palette.forEach((item, index) => {
     const hex = rgbToHex(item.r, item.g, item.b);
     const poetic = getPoeticColorName(item.r, item.g, item.b);
     const sel = state.selectedColorId === item.id;
     const card = document.createElement('div');
-    card.className = 'pal-card' + (sel ? ' sel' : '');
+    card.className = 'pal-card' + (sel ? ' sel' : '') + (animate ? ' anim' : '');
+    card.setAttribute('role', 'listitem');
     const roleLabel = item.role === 'dominant' ? 'Основной' : item.role === 'accent' ? 'Акцент' : 'Второстепенный';
     card.innerHTML = `
-      <span class="big" style="background:${hex}"><span class="num">#${index + 1}</span></span>
-      <span style="min-width:0;flex:1">
-        <span class="nm">${esc(poetic)}</span>
-        <span class="meta"><span class="mono">${esc(formatColorValue(item))}</span>
-        <span class="pct">${item.percentage.toFixed(1)}%</span>
-        <span class="role">${roleLabel}</span></span>
-      </span>
+      <button type="button" class="pal-main" aria-pressed="${sel}" aria-label="Выбрать ${esc(poetic)}, ${hex}">
+        <span style="position:relative;flex:none">
+          <span class="big" style="background:${hex}"><span class="num">#${index + 1}</span></span>
+          <span class="pal-check" aria-hidden="true"><svg class="ic"><use href="#i-check"/></svg></span>
+        </span>
+        <span style="min-width:0;flex:1">
+          <span class="nm">${esc(poetic)}</span>
+          <span class="meta"><span class="mono">${esc(formatColorValue(item))}</span>
+          <span class="pct">${item.percentage.toFixed(1)}%</span>
+          <span class="role">${roleLabel}</span></span>
+        </span>
+      </button>
       <span class="acts">
-        <button class="iconbtn" data-act="copy" title="Скопировать HEX">⧉</button>
-        ${state.palette.length > 1 ? `<button class="iconbtn" data-act="del" title="Убрать оттенок">✕</button>` : ''}
+        <button type="button" class="iconbtn" data-act="copy" title="Скопировать HEX" aria-label="Скопировать ${hex}">⧉</button>
+        ${state.palette.length > 1 ? `<button type="button" class="iconbtn" data-act="del" title="Убрать оттенок" aria-label="Убрать ${esc(poetic)}">✕</button>` : ''}
       </span>`;
-    card.addEventListener('click', () => onSelect(item.id));
+    card.querySelector('.pal-main').addEventListener('click', () => onSelect(item.id));
     card.querySelector('[data-act="copy"]').addEventListener('click', (e) => { e.stopPropagation(); onCopy(item); });
     const del = card.querySelector('[data-act="del"]');
     if (del) del.addEventListener('click', (e) => { e.stopPropagation(); onRemove(item.id); });
@@ -344,7 +369,10 @@ export function renderPerfume(bannerEl, pyramidEl, dosageEl, perfGridEl, radarCa
   ];
   pyramidEl.innerHTML = tiers.map((t) => `<div class="perf"><div style="display:flex;gap:8px;align-items:center"><span style="width:26px;height:26px;border-radius:8px;background:${t.hex};flex:none;border:1px solid rgba(255,255,255,.2)"></span><b>${t.label}</b></div><div class="explain" style="margin-top:4px">${esc(t.notes.join(' • '))}</div></div>`).join('');
   dosageEl.innerHTML = `<b>${globalDosage.sprays} распыления</b> · ${esc(state.occasion)} · ${state.weatherTemp > 0 ? '+' : ''}${state.weatherTemp}°C · летучесть ${globalDosage.volatility}`;
-  perfGridEl.innerHTML = topPerfumes.map((p) => `<div class="perf"><div style="display:flex;gap:8px;align-items:center"><span style="width:30px;height:30px;border-radius:9px;background:${p.hex};flex:none;border:1px solid rgba(255,255,255,.2)"></span><span style="min-width:0"><b>${esc(p.brand)} — ${esc(p.name)}</b><br><span class="explain">${esc(p.store)} · ${p.matchPercent}% совпадение</span></span></div><div class="explain" style="margin-top:4px">${esc(p.notes)}</div></div>`).join('');
+  perfGridEl.innerHTML = topPerfumes.map((p) => {
+    const band = p.matchPercent >= 90 ? 'яркое созвучие' : p.matchPercent >= 80 ? 'заметное созвучие' : 'тихое созвучие';
+    return `<div class="perf"><div style="display:flex;gap:8px;align-items:center"><span style="width:30px;height:30px;border-radius:9px;background:${p.hex};flex:none;border:1px solid rgba(255,255,255,.2)"></span><span style="min-width:0"><b>${esc(p.brand)} — ${esc(p.name)}</b><br><span class="explain">${esc(p.store)} · ${band} (образное сопоставление)</span></span></div><div class="explain" style="margin-top:4px">${esc(p.notes)}</div></div>`;
+  }).join('');
   drawRadar(radarCanvas, photoVector);
 }
 
@@ -389,12 +417,13 @@ export function renderProducts(gridEl, onCopy) {
   gridEl.innerHTML = '';
   for (const item of top) {
     const matchedHex = rgbToHex(item.matched.r, item.matched.g, item.matched.b);
+    const band = item.matchScore >= 95 ? 'очень близкий оттенок' : item.matchScore >= 85 ? 'близкий оттенок' : 'отдалённый оттенок';
     const el = document.createElement('div');
     el.className = 'prod';
     el.innerHTML = `<span class="sw" style="background:${item.hex}"></span>
       <span style="min-width:0;flex:1"><span class="t">${esc(item.title)}</span><br>
-      <span class="explain">${esc(item.store)} · ${esc(item.sku)} · <b style="color:#6ee7b7">${item.matchScore}% в тон</b> · тон фото <span class="mono">${matchedHex}</span></span></span>
-      <button class="iconbtn" title="Скопировать артикул">⧉</button>`;
+      <span class="explain">${esc(item.store)} · ${esc(item.sku)} · <b style="color:#6ee7b7">${band}</b> · тон фото <span class="mono">${matchedHex}</span></span></span>
+      <button type="button" class="iconbtn" title="Скопировать артикул" aria-label="Скопировать ${esc(item.sku)}">⧉</button>`;
     el.querySelector('button').addEventListener('click', () => onCopy(item.sku, item.hex, item.title));
     gridEl.appendChild(el);
   }

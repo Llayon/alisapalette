@@ -140,6 +140,18 @@ function applySort(rerender = true) {
   if (rerender) renderAll();
 }
 
+export function updatePhotoBadge() {
+  const badge = $('photoBadge');
+  if (!badge) return;
+  if (state.isDemo) {
+    badge.textContent = state.photoLabel || 'Демонстрационный пример';
+    badge.classList.add('demo');
+  } else {
+    badge.textContent = state.photoLabel || 'Ваше фото';
+    badge.classList.remove('demo');
+  }
+}
+
 export function renderAll() {
   renderPins(pinsLayer, mainCanvas, {
     onPinDown: (e, item, index, pin) => {
@@ -313,6 +325,9 @@ export async function handleImageFile(file) {
     }
     resetPhotoState(); // сброс устаревших данных ДО нового анализа
     resetStoryForPhoto(); // сброс кадрирования/кэша открытки
+    state.isDemo = false;
+    state.photoLabel = file.name || 'Ваше фото';
+    updatePhotoBadge();
     mainCanvas.width = w; mainCanvas.height = h;
     ctx.drawImage(bmp, 0, 0, w, h);
     if (bmp.close) { try { bmp.close(); } catch { /* noop */ } }
@@ -349,6 +364,9 @@ window.addEventListener('paste', (e) => {
 window.loadPresetSample = function (type) {
   const w = 800, h = 600;
   resetPhotoState();
+  state.isDemo = true;
+  state.photoLabel = { coffee: 'Пример: утренний латте', ootd: 'Пример: образ дня', flowers: 'Пример: пионы', gray: 'Пример: почти серое', interior: 'Пример: уютный дом' }[type] || 'Демонстрационный пример';
+  updatePhotoBadge();
   mainCanvas.width = w; mainCanvas.height = h;
   $('imageDimensions').textContent = `${w} × ${h} px`;
   if (type === 'coffee') {
@@ -478,13 +496,23 @@ document.querySelectorAll('[data-occasion]').forEach((btn) => {
   });
 });
 $('bloggerPromoInput').addEventListener('input', (e) => { state.bloggerPromo = e.target.value.trim() || 'БЛОГ10'; });
-// Подпись канала: только явное валидное значение, без плейсхолдера по умолчанию.
-$('blogHandleInput').addEventListener('input', (e) => {
-  state.blogHandle = e.target.value.trim();
-  story.channel = state.blogHandle;
-  touchStory();
-  syncStoryInputs();
-  scheduleStoryPrepare();
+// Главный CTA и hero-кнопка открывают выбор файла (нативная кнопка — доступна с клавиатуры).
+for (const id of ['topPickBtn', 'heroPickBtn', 'changePhotoBtn']) {
+  const btn = $(id);
+  if (btn) btn.addEventListener('click', () => { haptic('light'); $('fileInput').click(); });
+}
+// Демонстрационные примеры hero (делегирование вместо inline onclick).
+document.querySelector('.hero-examples').addEventListener('click', (e) => {
+  const chip = e.target.closest('[data-preset]');
+  if (!chip) return;
+  haptic('light');
+  window.loadPresetSample(chip.dataset.preset);
+  document.querySelector('.flow-photo').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+$('propDetailsBtn').addEventListener('click', () => {
+  const det = $('moreProportion');
+  det.open = true;
+  det.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 // ---------- Story Studio ----------
@@ -684,6 +712,15 @@ $('closeExportBtn').addEventListener('click', closeStudio);
 exportModal.addEventListener('click', (e) => { if (e.target === exportModal) closeStudio(); });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !exportModal.classList.contains('hidden')) closeStudio();
+  // Лёгкая Tab-ловушка открытой студии: фокус циклически внутри модалки.
+  if (e.key === 'Tab' && !exportModal.classList.contains('hidden')) {
+    const items = [...exportModal.querySelectorAll('button, input, select, textarea')].filter((el) => !el.disabled && el.offsetParent !== null);
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
 });
 document.querySelectorAll('[data-story-template]').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -715,8 +752,6 @@ $('storyTitleInput').addEventListener('input', (e) => {
 });
 $('storyChannelInput').addEventListener('input', (e) => {
   story.channel = e.target.value.trim();
-  state.blogHandle = story.channel;
-  $('blogHandleInput').value = story.channel;
   touchStory();
   scheduleStoryPrepare();
 });

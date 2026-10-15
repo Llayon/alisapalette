@@ -9,7 +9,6 @@ export const state = {
   sortBy: 'dominance',
   activeFormat: 'hex',
   activeCodeTab: 'css',
-  blogHandle: '',
   storyTitle: 'Палитра моего дня',
   bloggerPromo: 'БЛОГ10',
   weatherTemp: 20,
@@ -22,7 +21,9 @@ export const state = {
   olfactoryProfile: null,
   draggingPinId: null,
   activeHighlightId: null,
-  harmonyOpen: false
+  harmonyOpen: false,
+  isDemo: true,
+  photoLabel: 'Демонстрационный пример'
 };
 
 export function selectedColor() {

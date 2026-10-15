@@ -11,140 +11,182 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+      <symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></symbol>
+      <symbol id="i-palette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.7 0 1.7-.2 1.7-1.3 0-.9-.7-1.2-.7-2 0-1 .8-1.7 1.7-1.7H17c2.8 0 5-2.2 5-5 0-5.5-4.5-10-10-10z"/></symbol>
+      <symbol id="i-compass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.2 7.8 13.4 13.4 7.8 16.2 10.6 10.6 16.2 7.8"/></symbol>
+      <symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></symbol>
+      <symbol id="i-flask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6L4.5 19a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L14 9V3"/><path d="M7 15h10"/></symbol>
+      <symbol id="i-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h15l1.5 13.5a1 1 0 0 1-1 1.1H7.5a1 1 0 0 1-1-1.1z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></symbol>
+      <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+      <symbol id="i-drop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7l5.7 5.7a8 8 0 1 1-11.4 0z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></symbol>
+    </defs>
+  </svg>
   <header class="topbar">
     <div class="wrap topbar-in">
       <div class="brand">
-        <div class="logo">✦</div>
-        <div style="min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <h1 class="serif">ChromaStyle</h1>
-            <span class="badge">локально · без сервера</span>
-            <span class="badge green">OKLab · без ИИ</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-top:2px">
-            <span>Бренд блога:</span>
-            <input id="blogHandleInput" type="text" value="" placeholder="@ваш_канал" style="width:150px;padding:3px 8px;font-size:12px" aria-label="Ник канала">
-          </div>
-        </div>
+        <div class="logo" aria-hidden="true">✦</div>
+        <div class="brand-name serif">ChromaStyle</div>
       </div>
       <div class="top-actions">
-        <label for="fileInput" class="btn" style="cursor:pointer">📷 <span>Моё фото</span></label>
+        <button id="topPickBtn" class="btn primary" type="button"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg><span>Выбрать фото</span></button>
         <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-        <button id="openStoriesModalBtn" class="btn primary">▢ <span>Открытка в Stories</span></button>
       </div>
     </div>
   </header>
 
   <main class="wrap">
-    <div class="grid">
-      <!-- Левая колонка: фото → доли → парфюм → товары -->
-      <div class="col">
-        <div class="card o-photo">
-          <div class="rowline">
-            <h2>📸 Фотография</h2>
-            <span class="timings"><span id="imageDimensions">—</span> · <span id="processingTime">—</span></span>
-          </div>
-          <div class="presets" style="margin:10px 0">
-            <span style="font-size:12px;color:var(--muted)">Примеры:</span>
-            <button class="chip" onclick="loadPresetSample('coffee')">☕ Утренний латте</button>
-            <button class="chip" onclick="loadPresetSample('ootd')">🧥 Образ дня (OOTD)</button>
-            <button class="chip" onclick="loadPresetSample('flowers')">🌷 Пионы и пудра</button>
-            <button class="chip" onclick="loadPresetSample('interior')">🕯️ Уютный дом</button>
-            <button class="chip" onclick="loadPresetSample('gray')">⬜ Почти серое</button>
-          </div>
-          <div id="loadError" class="notice" hidden style="border-color:var(--rose);color:#fda4af;margin-bottom:8px"></div>
-          <div class="stage-bar">
-            <span>Сглаживание пипетки:</span>
-            <span class="seg" role="group" aria-label="Размер пипетки">
-              <button data-kernel="1">1×1</button>
-              <button data-kernel="3" class="on">3×3</button>
-              <button data-kernel="5">5×5</button>
-            </span>
-            <label style="display:inline-flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="togglePinsCheckbox" checked> Точки</label>
-            <button id="addCustomPinBtn" class="btn small">＋ Свой пин</button>
-          </div>
-          <div class="stage" id="canvasStage">
-            <div id="canvasWrapper">
-              <canvas id="mainCanvas"></canvas>
-              <div id="pinsLayer"></div>
-            </div>
-          </div>
-          <div class="hoverline"><span class="dot" id="hoverDot"></span><strong id="hoverName">Коснитесь фото</strong><span id="hoverVals">перетаскивайте кружки на детали</span></div>
-          <div class="timings" id="timingsLine" style="margin-top:6px"></div>
-        </div>
-
-        <div class="card o-proportion">
-          <div class="rowline">
-            <h2>✦ Доли цветов в кадре</h2>
-            <span class="verdict" id="stylistVerdictBadge">—</span>
-          </div>
-          <p class="sub">Объективное измерение: каждому пикселю выборки назначен ближайший итоговый цвет. Сумма — ровно 100,0%. Геометрия полосы точная.</p>
-          <div id="proportionBar" class="propbar" style="margin-top:10px"></div>
-          <div id="proportionLegend" class="legend"></div>
-          <div id="rule603010Grid" class="role603010"></div>
-        </div>
-
-        <div class="card o-perfume">
-          <div class="rowline">
-            <div>
-              <h2>🌸 Парфюмерный сомелье</h2>
-              <p class="sub">Перевод гаммы кадра в пирамиду нот (эвристика настроения, не научная оценка).</p>
-            </div>
-            <span style="display:inline-flex;gap:6px;align-items:center;font-size:11px;color:var(--muted)">Промокод <input id="bloggerPromoInput" type="text" value="БЛОГ10" style="width:80px;text-align:center" aria-label="Промокод"></span>
-          </div>
-          <div id="olfactoryHeaderBanner" style="margin-top:10px"></div>
-          <div id="olfactoryPyramidGrid" class="perfgrid" style="margin-top:8px"></div>
-          <div class="notice" style="margin-top:8px">
-            <div class="rowline"><b style="font-size:12px">Дозировка и погода</b>
-              <span style="display:inline-flex;gap:6px;align-items:center">
-                <span id="weatherTempLabel" class="mono" style="color:var(--amber)">+20°C</span>
-                <input id="weatherTempSlider" type="range" min="-15" max="35" value="20" style="width:110px" aria-label="Температура">
-              </span>
-            </div>
-            <div class="seg" style="margin:8px 0" role="group" aria-label="Повод">
-              <button data-occasion="office">Офис</button>
-              <button data-occasion="walk" class="on">Прогулка</button>
-              <button data-occasion="date">Свидание</button>
-              <button data-occasion="party">Вечер</button>
-            </div>
-            <div id="weatherAdviceText" style="font-size:12px"></div>
-          </div>
-          <div id="matchedPerfumesGrid" class="perfgrid" style="margin-top:8px"></div>
-          <canvas id="perfumeRadarCanvas" width="320" height="240" style="max-width:100%;height:auto;margin-top:8px"></canvas>
-        </div>
-
-        <div class="card o-products">
-          <div class="rowline"><h2>👜 Находки из блога в вашей палитре</h2><span class="badge">подбор по OKLab</span></div>
-          <p class="sub">Вещи из обзоров, ближайшие к цветам фото по перцепционному расстоянию в OKLab.</p>
-          <div id="matchedProductsGrid" class="prodgrid" style="margin-top:10px"></div>
+    <section class="hero" aria-labelledby="heroTitle">
+      <h1 id="heroTitle" class="serif">Найдите цвета своего кадра</h1>
+      <p class="hero-sub">Загрузите фото — покажем его палитру и красивые сочетания. Всё обрабатывается на вашем устройстве.</p>
+      <div class="hero-actions">
+        <button id="heroPickBtn" class="btn primary btn-lg" type="button"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg><span>Выбрать фото</span></button>
+        <div class="hero-examples" aria-label="Демонстрационные примеры">
+          <span class="hero-examples-label">или попробуйте:</span>
+          <button class="chip" data-preset="coffee">Утренний латте</button>
+          <button class="chip" data-preset="ootd">Образ дня</button>
+          <button class="chip" data-preset="flowers">Пионы и пудра</button>
+          <button class="chip" data-preset="interior">Уютный дом</button>
+          <button class="chip" data-preset="gray">Почти серое</button>
         </div>
       </div>
-
-      <!-- Правая колонка: палитра → сочетания → настройки -->
-      <div class="col">
-        <div class="card o-palette">
-          <div class="rowline">
-            <h2>🎨 Палитра кадра</h2>
-            <button id="copyAllHexBtn" class="btn small">⧉ Скопировать палитру</button>
+    </section>
+    <div class="flow">
+      <section class="card flow-photo" aria-labelledby="photoTitle">
+        <div class="rowline">
+          <h2 id="photoTitle"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg> Фотография</h2>
+          <span class="photo-badge" id="photoBadge">Демонстрационный пример</span>
+        </div>
+        <div id="loadError" class="notice notice-error" hidden role="alert"></div>
+        <div class="stage-actions">
+          <button id="changePhotoBtn" class="btn small" type="button"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg> Другое фото</button>
+          <span class="timings"><span id="imageDimensions">—</span></span>
+        </div>
+        <div class="stage" id="canvasStage">
+          <div id="canvasWrapper">
+            <canvas id="mainCanvas"></canvas>
+            <div id="pinsLayer"></div>
           </div>
-          <p class="sub">Репрезентативные оттенки — реальные цвета фото (медоиды кластеров), не усреднённая «грязь». Точное значение — HEX; поэтическое имя — подпись.</p>
-          <div id="paletteList" class="pal-list" style="margin-top:10px"></div>
         </div>
-
-        <div class="card o-harmony">
-          <div class="rowline"><h2>🧭 С чем сочетать</h2><span class="sub">выберите цвет выше</span></div>
-          <div id="harmonyContainer" style="display:flex;flex-direction:column;gap:10px;margin-top:10px"></div>
-        </div>
-
-        <details class="adv card o-settings" open>
-          <summary>⚙️ Режим разбора и точность <span class="explain">— технические настройки</span></summary>
+        <details class="adv refine" id="refineBox">
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-drop"/></svg> Уточнить цвета <span class="explain">— пипетка и точки</span></summary>
           <div class="body">
-            <div class="algo-grid" role="group" aria-label="Алгоритм">
-              <button class="algo on" data-algo="photo"><b>Палитра фотографии</b><span>Авторежим: OKLab K-Means + акценты. Рекомендуется.</span></button>
-              <button class="algo" data-algo="kmeans"><b>Баланс кадра</b><span>Классический K-Means в OKLab.</span></button>
-              <button class="algo" data-algo="mediancut"><b>Гардероб OOTD</b><span>Median Cut: делит диапазон цветов пополам. Хорош для тканей.</span></button>
-              <button class="algo" data-algo="histogram"><b>Яркие детали</b><span>Пики гистограммы с бустом насыщенности. Ловит помаду и цветы, чувствителен к шуму.</span></button>
+            <div class="rowline">
+              <span class="seg" role="group" aria-label="Размер пипетки">
+                <button data-kernel="1">1×1</button>
+                <button data-kernel="3" class="on">3×3</button>
+                <button data-kernel="5">5×5</button>
+              </span>
+              <label class="check"><input type="checkbox" id="togglePinsCheckbox" checked> Точки</label>
+              <button id="addCustomPinBtn" class="btn small" type="button">＋ Свой пин</button>
             </div>
+            <div class="hoverline"><span class="dot" id="hoverDot"></span><strong id="hoverName">Коснитесь фото</strong><span id="hoverVals">перетаскивайте кружки на детали</span></div>
+            <div class="timings" id="timingsLine"></div>
+            <div class="timings">Обработка: <span id="processingTime">—</span></div>
+          </div>
+        </details>
+      </section>
+
+      <section class="card flow-palette" aria-labelledby="paletteTitle">
+        <div class="rowline">
+          <h2 id="paletteTitle"><svg class="ic" aria-hidden="true"><use href="#i-palette"/></svg> Палитра кадра</h2>
+          <button id="copyAllHexBtn" class="btn small" type="button">⧉ Скопировать</button>
+        </div>
+        <p class="sub">Цвета, найденные на вашей фотографии. Нажмите на оттенок, чтобы увидеть сочетания.</p>
+        <div id="paletteList" class="pal-list" role="list"></div>
+        <div class="mini-prop" aria-hidden="true"><div id="miniPropBar" class="propbar propbar-mini"></div></div>
+        <button class="linklike" id="propDetailsBtn" type="button">Как распределяются доли →</button>
+      </section>
+
+      <section class="card flow-harmony" aria-labelledby="harmonyTitle">
+        <div class="rowline"><h2 id="harmonyTitle"><svg class="ic" aria-hidden="true"><use href="#i-compass"/></svg> С чем сочетать</h2></div>
+        <div id="harmonyContainer" class="harmony-flow"></div>
+      </section>
+
+      <section class="card story-cta" aria-labelledby="storyCtaTitle">
+        <div class="story-cta-in">
+          <div>
+            <h2 id="storyCtaTitle"><svg class="ic" aria-hidden="true"><use href="#i-card"/></svg> Открытка для Stories</h2>
+            <p class="sub">Сохраните палитру в красивом формате 9:16 — для себя или блога.</p>
+          </div>
+          <button id="openStoriesModalBtn" class="btn primary btn-lg" type="button">Создать открытку</button>
+        </div>
+      </section>
+
+      <section class="more" aria-labelledby="moreTitle">
+        <h2 id="moreTitle" class="more-title"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg> Ещё идеи</h2>
+
+        <details class="adv card" id="moreProportion">
+          <summary>Доли цветов и правило 60–30–10</summary>
+          <div class="body">
+            <div class="rowline">
+              <span class="verdict" id="stylistVerdictBadge">—</span>
+            </div>
+            <p class="sub">Как распределяются цвета на фотографии. Сумма долей — ровно 100%.</p>
+            <div id="proportionBar" class="propbar" style="margin-top:10px"></div>
+            <div id="proportionLegend" class="legend"></div>
+            <div id="rule603010Grid" class="role603010"></div>
+          </div>
+        </details>
+
+        <details class="adv card" id="morePerfume">
+          <summary>Аромат настроения <span class="tag">художественная ассоциация</span></summary>
+          <div class="body">
+            <div class="rowline">
+              <p class="sub" style="margin:0">Настроение кадра в нотах — образное сопоставление, а не измерение совместимости.</p>
+              <label class="promo">Промокод блогера <input id="bloggerPromoInput" type="text" value="БЛОГ10" aria-label="Промокод блогера"></label>
+            </div>
+            <div id="olfactoryHeaderBanner" style="margin-top:10px"></div>
+            <div id="olfactoryPyramidGrid" class="perfgrid" style="margin-top:8px"></div>
+            <div class="notice" style="margin-top:8px">
+              <div class="rowline"><b style="font-size:12px">Дозировка и погода</b>
+                <span style="display:inline-flex;gap:6px;align-items:center">
+                  <span id="weatherTempLabel" class="mono" style="color:var(--amber)">+20°C</span>
+                  <input id="weatherTempSlider" type="range" min="-15" max="35" value="20" style="width:110px" aria-label="Температура">
+                </span>
+              </div>
+              <div class="seg" style="margin:8px 0" role="group" aria-label="Повод">
+                <button data-occasion="office">Офис</button>
+                <button data-occasion="walk" class="on">Прогулка</button>
+                <button data-occasion="date">Свидание</button>
+                <button data-occasion="party">Вечер</button>
+              </div>
+              <div id="weatherAdviceText" style="font-size:12px"></div>
+            </div>
+            <div id="matchedPerfumesGrid" class="perfgrid" style="margin-top:8px"></div>
+            <canvas id="perfumeRadarCanvas" width="320" height="240" style="max-width:100%;height:auto;margin-top:8px" role="img" aria-label="Диаграмма обонятельного профиля"></canvas>
+          </div>
+        </details>
+
+        <details class="adv card" id="moreProducts">
+          <summary>Находки в вашей палитре <span class="tag">демо-каталог</span></summary>
+          <div class="body">
+            <p class="sub" style="margin-top:0">Демонстрационная подборка вещей рядом с цветами кадра. Покупка не оформляется — это пример витрины.</p>
+            <div id="matchedProductsGrid" class="prodgrid"></div>
+          </div>
+        </details>
+
+        <details class="adv card" id="moreSettings">
+          <summary>Точные настройки</summary>
+          <div class="body" id="settingsBody">
+            <div class="algo-grid" role="group" aria-label="Способ разбора">
+              <button class="algo on" data-algo="photo"><b>Палитра фотографии</b><span>Авторежим. Рекомендуется.</span></button>
+              <button class="algo" data-algo="kmeans"><b>Баланс кадра</b><span>Основные тона и атмосфера.</span></button>
+              <button class="algo" data-algo="mediancut"><b>Гардероб</b><span>Разделение тканей и базы.</span></button>
+              <button class="algo" data-algo="histogram"><b>Яркие детали</b><span>Акценты: помада, цветы.</span></button>
+            </div>
+            <details class="adv">
+              <summary>Что означают эти режимы</summary>
+              <div class="body explain">
+                Авторежим использует кластеризацию K-Means в восприятийно-равномерном пространстве OKLab с выделением акцентов.
+                «Баланс кадра» — классический K-Means. «Гардероб» делит диапазон цветов пополам (Median Cut) и хорош для тканей.
+                «Яркие детали» ищет пики гистограммы с усилением насыщенности — ловит помаду и цветы, но чувствителен к шуму.
+              </div>
+            </details>
             <div class="ctrl-grid">
               <div>
                 <label class="lbl" for="colorCountSlider">Оттенков: <b id="colorCountValue">6</b></label>
@@ -152,9 +194,9 @@
                 <div class="explain">Если различимых цветов меньше — вернём меньше, а не выдумаем лишние.</div>
               </div>
               <div>
-                <label class="lbl" for="deltaSlider">Различие оттенков: <b id="deltaValue">28</b></label>
+                <label class="lbl" for="deltaSlider">Насколько сильно должны отличаться оттенки: <b id="deltaValue">28</b></label>
                 <input id="deltaSlider" type="range" min="10" max="70" value="28">
-                <div class="explain">Порог слияния похожих цветов (OKLab-расстояние).</div>
+                <div class="explain">Порог слияния похожих цветов.</div>
               </div>
             </div>
             <div class="rowline">
@@ -174,7 +216,7 @@
             </div>
           </div>
         </details>
-      </div>
+      </section>
     </div>
   </main>
 
