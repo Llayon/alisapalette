@@ -6,9 +6,7 @@
   <meta name="theme-color" content="#0c0a09">
   <meta name="description" content="ChromaStyle — локальный разбор палитры фотографии и гармоничные сочетания. Всё в браузере, без сервера и регистрации.">
   <title>ChromaStyle — палитра фото и гармоничные сочетания</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/fonts/fonts.css">
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -143,7 +141,7 @@
             <div id="olfactoryHeaderBanner" style="margin-top:10px"></div>
             <div id="olfactoryPyramidGrid" class="perfgrid" style="margin-top:8px"></div>
             <div class="notice" style="margin-top:8px">
-              <div class="rowline"><b style="font-size:12px">Дозировка и погода</b>
+              <div class="rowline"><b style="font-size:0.75rem">Дозировка и погода</b>
                 <span style="display:inline-flex;gap:6px;align-items:center">
                   <span id="weatherTempLabel" class="mono" style="color:var(--amber)">+20°C</span>
                   <input id="weatherTempSlider" type="range" min="-15" max="35" value="20" style="width:110px" aria-label="Температура">
@@ -155,7 +153,7 @@
                 <button data-occasion="date">Свидание</button>
                 <button data-occasion="party">Вечер</button>
               </div>
-              <div id="weatherAdviceText" style="font-size:12px"></div>
+              <div id="weatherAdviceText" style="font-size:0.75rem"></div>
             </div>
             <div id="matchedPerfumesGrid" class="perfgrid" style="margin-top:8px"></div>
             <canvas id="perfumeRadarCanvas" width="320" height="240" style="max-width:100%;height:auto;margin-top:8px" role="img" aria-label="Диаграмма обонятельного профиля"></canvas>
@@ -200,7 +198,7 @@
               </div>
             </div>
             <div class="rowline">
-              <label style="font-size:12px;color:var(--muted)">Сортировка
+              <label style="font-size:0.75rem;color:var(--muted)">Сортировка
                 <select id="sortSelect" aria-label="Сортировка палитры">
                   <option value="dominance">По доле в кадре (%)</option>
                   <option value="luminance">От светлых к тёмным</option>
@@ -223,13 +221,13 @@
   <div id="exportModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Story Studio">
     <div class="sheet studio">
       <div class="rowline">
-        <div><h2 style="font-size:16px">✦ Story Studio</h2><p class="sub">Открытка 1080×1920 из вашей фотографии. Всё — локально на устройстве.</p></div>
+        <div><h2 style="font-size:1rem">✦ Story Studio</h2><p class="sub">Открытка 1080×1920 из вашей фотографии. Всё — локально на устройстве.</p></div>
         <button id="closeExportBtn" class="btn small" aria-label="Закрыть студию">✕ Закрыть</button>
       </div>
       <div class="studio-grid">
         <div class="studio-preview">
-          <canvas id="storyPreview" width="540" height="960" aria-label="Предпросмотр открытки. Потяните, чтобы сместить фото"></canvas>
-          <div class="explain" id="cropHint">Потяните фото, чтобы сместить кадр · работает при режиме «Заполнить»</div>
+          <canvas id="storyPreview" width="540" height="960" tabindex="0" aria-label="Предпросмотр открытки и кадрирование" aria-describedby="cropHint"></canvas>
+          <div class="explain" id="cropHint">В режиме «Заполнить»: потяните фото или используйте стрелки. Shift — крупный шаг, Home — сброс, Escape — отмена перетаскивания.</div>
           <div class="timings" id="storyStatus" role="status">Готовим открытку…</div>
         </div>
         <div class="studio-controls">
@@ -239,14 +237,14 @@
             <button class="tpl" data-story-template="magazine"><b>Magazine</b><span>Смелые блоки</span></button>
             <button class="tpl" data-story-template="aroma"><b>Aroma</b><span>Аромат дня</span></button>
           </div>
-          <label style="font-size:12px">Заголовок
+          <label style="font-size:0.75rem">Заголовок
             <input id="storyTitleInput" type="text" value="Палитра моего дня" maxlength="60" aria-label="Заголовок открытки">
           </label>
-          <label style="font-size:12px">Подпись канала (необязательно)
+          <label style="font-size:0.75rem">Подпись канала (необязательно)
             <input id="storyChannelInput" type="text" value="" placeholder="@ваш_канал" maxlength="33" aria-label="Подпись Telegram-канала">
           </label>
           <div class="rowline">
-            <span style="font-size:12px;color:var(--muted)">Оттенков</span>
+            <span style="font-size:0.75rem;color:var(--muted)">Оттенков</span>
             <span class="seg" role="group" aria-label="Число оттенков">
               <button data-story-count="3">3</button>
               <button data-story-count="4">4</button>
@@ -255,7 +253,7 @@
             </span>
           </div>
           <div class="rowline">
-            <span style="font-size:12px;color:var(--muted)">Фото</span>
+            <span style="font-size:0.75rem;color:var(--muted)">Фото</span>
             <span class="seg" role="group" aria-label="Режим фото">
               <button data-story-fit="cover" class="on">Заполнить</button>
               <button data-story-fit="contain">Вписать</button>
@@ -281,7 +279,7 @@
                 </span>
                 <button id="copyExportCodeBtn" class="btn small">⧉ Скопировать код</button>
               </div>
-              <textarea id="exportCodeArea" readonly rows="5" class="mono" style="font-size:11px"></textarea>
+              <textarea id="exportCodeArea" readonly rows="5" class="mono" style="font-size:0.6875rem"></textarea>
             </div>
           </details>
         </div>

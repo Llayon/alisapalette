@@ -2,8 +2,18 @@ import { describe, it, expect } from 'vitest';
 import {
   srgbChannelToLinear, linearToSrgbChannel, rgbToLinear, linearToRgb,
   rgbToOklab, oklabToRgb, oklabToOklch, oklchToRgb, oklabDistance,
-  relativeLuminance, isNeutralRgb, linearInGamut, rgbToHex, hexToRgb, hueDiff
+  relativeLuminance, isNeutralRgb, linearInGamut, rgbToHex, hexToRgb, hueDiff, textOnColor
 } from '../src/color-science.js';
+
+it('текст на цветном фоне выбирает более контрастный чёрный или белый', () => {
+  for (let r = 0; r <= 255; r += 17) for (let g = 0; g <= 255; g += 17) for (let b = 0; b <= 255; b += 17) {
+    const rgb = { r, g, b }, y = relativeLuminance(rgb);
+    const white = 1.05 / (y + 0.05), black = (y + 0.05) / 0.05;
+    const chosen = textOnColor(rgb);
+    expect(chosen).toBe(black >= white ? '#000000' : '#ffffff');
+    expect(Math.max(black, white)).toBeGreaterThanOrEqual(4.5);
+  }
+});
 
 const CASES = [
   { r: 255, g: 255, b: 255 },

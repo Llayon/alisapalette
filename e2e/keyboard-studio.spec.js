@@ -1,0 +1,32 @@
+import { test, expect } from './fixtures.js';
+import { createHash } from 'node:crypto';
+
+test('переключатели объявляют состояние, кадрирование доступно с клавиатуры', async ({ page }) => {
+  await page.goto('./', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#paletteList .pal-main').first()).toBeVisible();
+  await page.locator('#moreSettings > summary').click();
+  await page.locator('[data-format="rgb"]').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-format="rgb"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-format="hex"]')).toHaveAttribute('aria-pressed', 'false');
+  await page.locator('#openStoriesModalBtn').click();
+  await expect(page.locator('#storyStatus.ready')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('[data-story-template="editorial"]')).toHaveAttribute('aria-pressed', 'true');
+  const preview = async () => createHash('sha256').update(await page.locator('#storyPreview').evaluate(c => c.toDataURL())).digest('hex');
+  const original = await preview();
+  await page.locator('#storyPreview').focus();
+  await page.keyboard.press('Shift+ArrowDown');
+  await expect.poll(preview).not.toBe(original);
+  await expect(page.locator('#storyPreview')).toBeFocused();
+  await page.keyboard.press('Home');
+  await expect.poll(preview).toBe(original);
+  await page.locator('[data-story-fit="contain"]').focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('[data-story-fit="contain"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-story-fit="cover"]')).toHaveAttribute('aria-pressed', 'false');
+  await page.locator('#closeExportBtn').focus();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#storyPreview')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#openStoriesModalBtn')).toBeFocused();
+});

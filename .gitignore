@@ -3,6 +3,7 @@ dist/
 test-results/
 playwright-report/
 playwright/.cache/
+.verification/
 *.log
 .DS_Store
 .env

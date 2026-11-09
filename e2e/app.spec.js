@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 async function countGt0(locator, timeout = 15000) {
   await expect.poll(async () => locator.count(), { timeout }).toBeGreaterThan(0);

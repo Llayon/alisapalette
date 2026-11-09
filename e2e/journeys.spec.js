@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 // Экспертные UX-сценарии (не user research): число шагов, состояния, ошибки.
 const errors = [];

@@ -3,7 +3,7 @@
  * но выбор ближайшего названия переведён на перцепционную метрику OKLab.
  * Поэтическое имя — декоративная подпись, точный цвет не меняется.
  */
-import { oklabDistanceRgb, isNearNeutralRgb, rgbToOklch, neutralTemperature } from './color-science.js';
+import { rgbToOklch, neutralTemperature, NEAR_NEUTRAL_C, oklabToOklch } from './color-science.js';
 
 export const POETIC_COLORS = [
   { name: 'Топлёное молоко', r: 248, g: 241, b: 229 },
@@ -72,7 +72,10 @@ export const POETIC_COLORS = [
 
 // Предвычисленные OKLab-координаты словаря (для скорости).
 import { rgbToOklab } from './color-science.js';
-const POETIC_LAB = POETIC_COLORS.map((c) => ({ name: c.name, lab: rgbToOklab(c) }));
+const POETIC_LAB = POETIC_COLORS.map(c => {
+  const lab = rgbToOklab(c);
+  return { name: c.name, lab, chroma: oklabToOklch(lab).C };
+});
 
 /**
  * Ближайшее поэтическое название по перцепционному расстоянию в OKLab.
@@ -84,9 +87,9 @@ const POETIC_LAB = POETIC_COLORS.map((c) => ({ name: c.name, lab: rgbToOklab(c) 
  */
 export function getPoeticColorName(r, g, b) {
   const target = typeof r === 'object' ? r : { r, g, b };
-  const nearNeutral = isNearNeutralRgb(target);
   const targetLab = rgbToOklab(target);
-  const targetC = rgbToOklch(target).C;
+  const targetC = oklabToOklch(targetLab).C;
+  const nearNeutral = targetC < NEAR_NEUTRAL_C;
 
   let bestName = 'Благородный оттенок';
   let bestScore = Infinity;
@@ -100,9 +103,7 @@ export function getPoeticColorName(r, g, b) {
     if (d < rawBest) { rawBest = d; rawName = entry.name; }
     let score = d;
     if (nearNeutral) {
-      const cand = POETIC_COLORS.find((c) => c.name === entry.name);
-      const candC = rgbToOklch(cand).C;
-      score += Math.max(0, candC - targetC) * 1.5;
+      score += Math.max(0, entry.chroma - targetC) * 1.5;
     }
     if (score < bestScore) { bestScore = score; bestName = entry.name; }
   }

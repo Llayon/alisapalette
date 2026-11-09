@@ -149,6 +149,21 @@ describe('recalculateShares', () => {
 });
 
 describe('сортировки', () => {
+  it('светлота определяется отображаемым RGB и поддерживает ручные точки', () => {
+    const white = { id: 'manual', r: 255, g: 255, b: 255, percentage: 10 };
+    const black = { id: 'cluster', r: 0, g: 0, b: 0, percentage: 90, center: rgbToOklab(white) };
+    expect(sortPaletteItems([black, white], 'luminance').map(c => c.id)).toEqual(['manual', 'cluster']);
+  });
+
+  it('пересчёт долей обновляет роли ручных цветов', () => {
+    const white = { r: 255, g: 255, b: 255, role: 'accent' };
+    const red = { r: 255, g: 0, b: 0, role: 'dominant' };
+    const pixels = [...Array.from({ length: 95 }, () => ({ ...white })), ...Array.from({ length: 5 }, () => ({ ...red }))];
+    recalculateShares([white, red], pixels);
+    expect(white.role).toBe('dominant');
+    expect(red.role).toBe('accent');
+  });
+
   it('luminance/hue не теряют элементы', () => {
     const items = analyzePixels(manyDetailsPixels(), { algorithm: 'photo', colorCount: 6, minDelta: 28 });
     for (const sort of ['dominance', 'luminance', 'hue']) {

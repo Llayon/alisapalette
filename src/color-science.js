@@ -139,9 +139,12 @@ export function relativeLuminance(rgb) {
   return 0.2126 * lin.r + 0.7152 * lin.g + 0.0722 * lin.b;
 }
 
-/** Текст на цветном фоне: '#0c0a09' или '#ffffff'. */
+/** Pick the higher-contrast black or white against the actual linear luminance. */
 export function textOnColor(rgb) {
-  return relativeLuminance(rgb) > 0.35 ? '#0c0a09' : '#ffffff';
+  const luminance = relativeLuminance(rgb);
+  const whiteContrast = 1.05 / (luminance + 0.05);
+  const blackContrast = (luminance + 0.05) / 0.05;
+  return blackContrast >= whiteContrast ? '#000000' : '#ffffff';
 }
 
 // ---------- neutral handling ----------

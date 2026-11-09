@@ -1,19 +1,19 @@
 /**
- * Четыре шаблона Story Studio. Каждый render(ctx, env) возвращает meta:
- * { swatches: [{x,y,w,h,rgb}], texts: [{x,y,w,h}] } — для pixel-тестов.
+ * Четыре шаблона Story Studio возвращают геометрию образцов цвета.
+ * Общий renderer добавляет фактические границы всех нарисованных текстов.
  * Цвета swatches — точные исходные RGB, без фильтров и наложений.
  */
 import { coverRect, containRect, SAFE, rowRects } from './layout.js';
 import { wrapLines, setFont } from './typography.js';
 import { isValidChannel } from './story-state.js';
+import { textOnColor } from '../color-science.js';
 
 export const SERIF = '"Cormorant Garamond", Georgia, serif';
 export const SANS = 'Inter, system-ui, sans-serif';
 export const MONO = '"JetBrains Mono", ui-monospace, monospace';
 
 function textOn(r, g, b) {
-  const L = 0.2126 * (r / 255) + 0.7152 * (g / 255) + 0.0722 * (b / 255);
-  return L > 0.45 ? '#1c1917' : '#ffffff';
+  return textOnColor({ r, g, b });
 }
 
 function drawPhoto(ctx, env, box) {
@@ -35,46 +35,53 @@ function drawPhoto(ctx, env, box) {
 }
 
 function drawTitle(ctx, env, x, y, maxW, color, baseSize, align = 'left') {
-  const { lines } = wrapLines(ctx, env.title || 'Без названия', maxW, 2);
   setFont(ctx, baseSize, SERIF, '700');
+  const { lines } = wrapLines(ctx, env.title || 'Без названия', maxW, 2);
   ctx.fillStyle = color;
   ctx.textAlign = align;
   ctx.textBaseline = 'top';
   const lh = baseSize * 1.12;
   const ax = align === 'center' ? x + maxW / 2 : align === 'right' ? x + maxW : x;
-  lines.forEach((ln, i) => ctx.fillText(ln, ax, y + i * lh));
-  return { x, y, w: maxW, h: lines.length * lh };
+  lines.forEach((line, i) => ctx.fillText(line, ax, y + i * lh));
 }
 
 function drawFooter(ctx, env, W, H, color, sub) {
-  const boxes = [];
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   const cx = W / 2;
   // Подвал — некритичный брендинг; важный контент выше (см. safe-зону).
   const yBase = H - 200;
   if (env.channel && isValidChannel(env.channel)) {
-    setFont(ctx, 34, SANS, '600');
+    let size = 34;
+    do {
+      setFont(ctx, size, SANS, '600');
+      if (ctx.measureText(env.channel).width <= W - SAFE.left - SAFE.right) break;
+      size--;
+    } while (size >= 18);
     ctx.fillStyle = color;
     ctx.fillText(env.channel, cx, yBase - 44);
-    boxes.push({ x: cx - 300, y: yBase - 80, w: 600, h: 40 });
   }
   setFont(ctx, 30, SANS);
   ctx.fillStyle = sub;
   ctx.fillText('Создано в ChromaStyle', cx, yBase);
   setFont(ctx, 26, SANS);
   ctx.fillText('llayon.github.io/alisapalette', cx, yBase + 40);
-  boxes.push({ x: cx - 320, y: yBase - 14, w: 640, h: 60 });
-  return boxes;
 }
 
-function labelFor(env, c) {
-  const parts = [];
-  if (env.showNames) parts.push(c.name);
-  if (env.showHex) parts.push(c.hex);
-  if (env.showPct) parts.push(c.pct.toFixed(1) + '%');
-  return parts;
+function drawSwatchLabels(ctx, env, color, rect, top, foreground) {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = foreground;
+  const x = rect.x + rect.w / 2;
+  let y = top;
+  if (env.showHex) { setFont(ctx, 26, MONO); ctx.fillText(color.hex, x, y); y += 32; }
+  if (env.showNames) {
+    const size = rect.w < 200 ? 20 : 24;
+    setFont(ctx, size, SANS);
+    const { lines } = wrapLines(ctx, color.name, rect.w - 8, 3);
+    for (const line of lines) { ctx.fillText(line, x, y); y += Math.ceil(size * 1.2); }
+  }
+  if (env.showPct) { setFont(ctx, 24, MONO); ctx.fillText(color.pct.toFixed(1) + '%', x, y + 4); }
 }
+
 
 // ---------- A: Palette Editorial ----------
 function renderEditorial(ctx, env) {
@@ -89,9 +96,8 @@ function renderEditorial(ctx, env) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillText('CHROMASTYLE · ПАЛИТРА КАДРА', pad, y);
-  meta.texts.push({ x: pad, y, w: 600, h: 40 });
   y += 56;
-  meta.texts.push(drawTitle(ctx, env, pad, y, W - pad * 2, '#1c1917', 92));
+  drawTitle(ctx, env, pad, y, W - pad * 2, '#1c1917', 92);
   y += 2 * 92 * 1.12 + 36;
   // Фото и ряды делят место до подписной зоны (H-400): без наложений и вылезания.
   const n = env.colors.length;
@@ -114,25 +120,24 @@ function renderEditorial(ctx, env) {
     ctx.fillStyle = '#1c1917';
     ctx.textAlign = 'left';
     setFont(ctx, 36, SANS, '600');
-    const label = labelFor(env, c)[0] || c.hex;
-    const { lines } = wrapLines(ctx, label, W - pad * 2 - 130 - 170, 1);
-    ctx.fillText(lines[0] || '', pad + 130, y + 8);
-    meta.texts.push({ x: pad + 130, y, w: W - pad * 2 - 300, h: 50 });
+    const label = env.showNames ? c.name : env.showHex ? c.hex : '';
+    const primarySize = sh >= 80 ? 36 : 26;
+    setFont(ctx, primarySize, env.showNames ? SANS : MONO, '600');
+    const { lines } = wrapLines(ctx, label, W - pad * 2 - 130 - (env.showPct ? 170 : 0), 1);
+    if (lines.length) ctx.fillText(lines[0], pad + 130, y + 4);
     if (env.showPct) {
-      setFont(ctx, 34, MONO, '700');
-      ctx.fillStyle = '#b0485e';
-      ctx.textAlign = 'right';
-      ctx.fillText(c.pct.toFixed(1) + '%', W - pad, y + 10);
+      setFont(ctx, 30, MONO, '700');
+      ctx.fillStyle = '#b0485e'; ctx.textAlign = 'right';
+      ctx.fillText(c.pct.toFixed(1) + '%', W - pad, y + 8);
     }
-    if (env.showHex && env.showNames && sh >= 92) {
-      setFont(ctx, 28, MONO);
-      ctx.fillStyle = '#8a837c';
-      ctx.textAlign = 'left';
-      ctx.fillText(c.hex, pad + 130, y + 56);
+    if (env.showHex && env.showNames) {
+      setFont(ctx, sh >= 80 ? 28 : 22, MONO);
+      ctx.fillStyle = '#57534e'; ctx.textAlign = 'left';
+      ctx.fillText(c.hex, pad + 130, y + primarySize * 1.15 + 4);
     }
     y += sh + 14;
   }
-  meta.texts.push(...drawFooter(ctx, env, W, H, '#57534e', '#a8a29e'));
+  drawFooter(ctx, env, W, H, '#57534e', '#a8a29e');
   return meta;
 }
 
@@ -161,35 +166,16 @@ function renderPolaroid(ctx, env) {
   const { lines } = wrapLines(ctx, env.title || 'Без названия', cardW - 120, 2);
   const lh = 62;
   lines.forEach((ln, i) => ctx.fillText(ln, W / 2, photoBox.y + photoBox.h + 44 + i * lh));
-  meta.texts.push({ x: cardX, y: photoBox.y + photoBox.h + 30, w: cardW, h: lines.length * lh });
   // полоса палитры
-  const stripY = photoBox.y + photoBox.h + 250 + 60;
+  const stripY = photoBox.y + photoBox.h + 210;
   const segs = rowRects(cardX, stripY, cardW, 120, env.colors.length, 10);
   env.colors.forEach((c, i) => {
     ctx.fillStyle = c.hex;
     ctx.fillRect(segs[i].x, segs[i].y, segs[i].w, segs[i].h);
     meta.swatches.push({ x: segs[i].x, y: segs[i].y, w: segs[i].w, h: segs[i].h, rgb: [c.r, c.g, c.b] });
   });
-  let ly = stripY + 140;
-  ctx.textAlign = 'center';
-  env.colors.forEach((c, i) => {
-    const cxp = segs[i].x + segs[i].w / 2;
-    if (env.showHex) {
-      setFont(ctx, 26, MONO);
-      ctx.fillStyle = '#57534e';
-      ctx.fillText(c.hex, cxp, ly);
-    }
-    // Название — только если реально помещается (без уродливых обрывков)
-    if (env.showNames) {
-      setFont(ctx, 24, SANS);
-      if (ctx.measureText(c.name).width <= segs[i].w + 40) {
-        ctx.fillStyle = '#8a837c';
-        ctx.fillText(c.name, cxp, ly + (env.showHex ? 32 : 0));
-      }
-    }
-  });
-  meta.texts.push({ x: cardX, y: ly - 10, w: cardW, h: 70 });
-  meta.texts.push(...drawFooter(ctx, env, W, H, '#78716c', '#a8a29e'));
+  env.colors.forEach((c, i) => drawSwatchLabels(ctx, env, c, segs[i], stripY + 140, '#57534e'));
+  drawFooter(ctx, env, W, H, '#78716c', '#a8a29e');
   return meta;
 }
 
@@ -213,7 +199,6 @@ function renderMagazine(ctx, env) {
   ctx.fillStyle = '#fafaf9';
   const lh = 104 * 1.02;
   lines.forEach((ln, i) => ctx.fillText(ln, pad, y + i * lh));
-  meta.texts.push({ x: pad, y, w: W - pad * 2, h: lines.length * lh });
   y += lines.length * lh + 30;
   // фото слева, блоки справа — сетка заполняет всё до подписной зоны
   const gridY = y;
@@ -238,18 +223,20 @@ function renderMagazine(ctx, env) {
     const avail = bw - 32;
     let ly = by + 14;
     // Строки показываем только если помещаются в блок (без наложений)
-    const put = (text, px, font, mono) => {
+    const put = (text, px, mono = false, maxLines = 1) => {
       if (ly + px > by + bh - 8) return;
       setFont(ctx, px, mono ? MONO : SANS, '700');
-      const { lines } = wrapLines(ctx, text, avail, 1);
-      ctx.fillText(lines[0] || '', bx + 16, ly);
-      ly += px * 1.15;
+      const { lines } = wrapLines(ctx, text, avail, maxLines);
+      for (const line of lines) {
+        if (ly + px > by + bh - 8) break;
+        ctx.fillText(line, bx + 16, ly);
+        ly += px * 1.15;
+      }
     };
-    if (env.showPct) put(c.pct.toFixed(0) + '%', Math.min(64, Math.max(34, bh * 0.3)), false);
-    if (env.showNames) put(c.name, 30, false);
-    if (env.showHex) put(c.hex, 26, true);
+    if (env.showPct) put(c.pct.toFixed(1) + '%', Math.min(64, Math.max(26, bh * 0.22)), false);
+    if (env.showNames) put(c.name, 24, false, 2);
+    if (env.showHex) put(c.hex, 24, true);
   });
-  meta.texts.push({ x: bx, y: gridY, w: bw, h: blockH });
   // нижняя подпись
   setFont(ctx, 30, SANS);
   ctx.fillStyle = '#a8a29e';
@@ -257,7 +244,7 @@ function renderMagazine(ctx, env) {
   const note = 'Фактические цвета кадра · доли измерены локально';
   const { lines: nl } = wrapLines(ctx, note, W - pad * 2, 1);
   ctx.fillText(nl[0], pad, gridY + blockH + 28);
-  meta.texts.push(...drawFooter(ctx, env, W, H, '#e7e5e4', '#78716c'));
+  drawFooter(ctx, env, W, H, '#e7e5e4', '#78716c');
   return meta;
 }
 
@@ -276,7 +263,7 @@ function renderAroma(ctx, env) {
   ctx.textBaseline = 'top';
   ctx.fillText('CHROMASTYLE · АРОМАТ ДНЯ', pad, y);
   y += 54;
-  meta.texts.push(drawTitle(ctx, env, pad, y, W - pad * 2, '#faf6f0', 84));
+  drawTitle(ctx, env, pad, y, W - pad * 2, '#faf6f0', 84);
   y += 2 * 84 * 1.12 + 30;
   // Двухпроходная компоновка: сначала измеряем текстовый блок, потом фото —
   // ничего не вылезает за подписную зону и не налегает.
@@ -291,8 +278,8 @@ function renderAroma(ctx, env) {
   const top = prof && prof.topPerfumes && prof.topPerfumes[0];
   const textBlock = fam.lines.length * 46 + 18
     + tierLines.reduce((s, k) => s + 34 + k * 40 + 14, 0)
-    + (top ? 34 + 52 : 52) + 96 + 40;
-  const photoH = Math.min(640, Math.max(380, H - 420 - textBlock - y));
+    + (top ? 34 + 52 : 52) + 96 + 40 + 150;
+  const photoH = Math.min(640, Math.max(280, H - 420 - textBlock - y));
   const photoBox = { x: pad, y, w: W - pad * 2, h: photoH };
   ctx.save();
   roundRectPath(ctx, photoBox.x, photoBox.y, photoBox.w, photoBox.h, 24);
@@ -306,7 +293,6 @@ function renderAroma(ctx, env) {
     ctx.fillStyle = '#f5e8d5';
     ctx.textAlign = 'left';
     fam.lines.forEach((ln, i) => ctx.fillText(ln, pad, y + i * 46));
-    meta.texts.push({ x: pad, y, w: W - pad * 2, h: fam.lines.length * 46 });
     y += fam.lines.length * 46 + 18;
     tiers.forEach(([label, notes], ti) => {
       setFont(ctx, 26, MONO, '600');
@@ -330,7 +316,6 @@ function renderAroma(ctx, env) {
       ctx.fillText(pn.lines[0] || '', pad, y);
       y += 52;
     }
-    meta.texts.push({ x: pad, y: photoBox.y + photoBox.h + 30, w: W - pad * 2, h: y - photoBox.y - photoBox.h - 30 });
   } else {
     setFont(ctx, 32, SANS);
     ctx.fillStyle = '#e7e5e4';
@@ -344,7 +329,8 @@ function renderAroma(ctx, env) {
     ctx.fillRect(segs[i].x, segs[i].y, segs[i].w, segs[i].h);
     meta.swatches.push({ x: segs[i].x, y: segs[i].y, w: segs[i].w, h: segs[i].h, rgb: [c.r, c.g, c.b] });
   });
-  meta.texts.push(...drawFooter(ctx, env, W, H, '#d6c7b4', '#8a837c'));
+  env.colors.forEach((c, i) => drawSwatchLabels(ctx, env, c, segs[i], y + 116, '#d6c7b4'));
+  drawFooter(ctx, env, W, H, '#d6c7b4', '#8a837c');
   return meta;
 }
 
@@ -360,10 +346,10 @@ function roundRectPath(ctx, x, y, w, h, r) {
 }
 
 export const TEMPLATES = {
-  editorial: { id: 'editorial', name: 'Editorial', desc: 'Минимализм: воздух, serif, 5 образцов', render: renderEditorial },
-  polaroid: { id: 'polaroid', name: 'Polaroid', desc: 'Бумага, рамка, полоса палитры', render: renderPolaroid },
-  magazine: { id: 'magazine', name: 'Magazine', desc: 'Смелый журнал: блоки + проценты', render: renderMagazine },
-  aroma: { id: 'aroma', name: 'Aroma', desc: 'Аромат дня: ноты и ассоциация', render: renderAroma }
+  editorial: renderEditorial,
+  polaroid: renderPolaroid,
+  magazine: renderMagazine,
+  aroma: renderAroma
 };
 
 export function templateIds() {

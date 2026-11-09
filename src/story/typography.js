@@ -80,3 +80,26 @@ export function fitFontSize(ctx, text, maxWidth, base, min, font) {
 export function setFont(ctx, px, family, weight = '') {
   ctx.font = `${weight ? weight + ' ' : ''}${px}px ${family}`;
 }
+
+/** Record actual ink bounds in layout coordinates, preserving the context method. */
+export function captureTextBounds(ctx, draw) {
+  const descriptor = Object.getOwnPropertyDescriptor(ctx, 'fillText');
+  const original = ctx.fillText;
+  const texts = [];
+  ctx.fillText = function (text, x, y, ...args) {
+    const metrics = this.measureText(text);
+    const scale = args[0] > 0 && metrics.width > args[0] ? args[0] / metrics.width : 1;
+    texts.push({
+      text: String(text), x: x - metrics.actualBoundingBoxLeft * scale,
+      y: y - metrics.actualBoundingBoxAscent,
+      w: (metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight) * scale,
+      h: metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
+    });
+    return original.call(this, text, x, y, ...args);
+  };
+  try { return { result: draw(), texts }; }
+  finally {
+    if (descriptor) Object.defineProperty(ctx, 'fillText', descriptor);
+    else delete ctx.fillText;
+  }
+}

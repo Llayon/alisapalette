@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "e2e:install": "playwright install chromium"
+    "check": "npm test && npm run build && npm run e2e",
+    "e2e:install": "playwright install chromium firefox webkit"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
