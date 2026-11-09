@@ -46,17 +46,21 @@ export async function copyText(text) {
       return true;
     }
   } catch { /* fallback */ }
+  let ta;
+  const previousFocus = document.activeElement;
   try {
-    const ta = document.createElement('textarea');
+    ta = document.createElement('textarea');
     ta.value = text;
     ta.style.position = 'fixed';
     ta.style.opacity = '0';
     document.body.appendChild(ta);
     ta.select();
     const ok = document.execCommand('copy');
-    ta.remove();
     return !!ok;
   } catch {
     return false;
+  } finally {
+    ta?.remove();
+    if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
   }
 }

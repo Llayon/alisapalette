@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { propose603010 } from '../src/ui.js';
+import { propose603010, formatColorValue } from '../src/ui.js';
+import { state } from '../src/state.js';
+
+it('HSL выдаётся с допустимой единицей угла CSS', () => {
+  const previous = state.activeFormat;
+  try {
+    state.activeFormat = 'hsl';
+    expect(formatColorValue({ r: 255, g: 0, b: 0 })).toBe('hsl(0deg, 100%, 50%)');
+  } finally { state.activeFormat = previous; }
+});
 
 const C = (n, percentage, c) => ({ r: n * 10 % 256, g: n * 20 % 256, b: n * 30 % 256, percentage, n: 'X' + n, _C: c });
 

@@ -7,6 +7,7 @@
 import { TEMPLATES } from './templates.js';
 import { getPoeticColorName } from '../poetic.js';
 import { rgbToHex } from '../color-science.js';
+import { captureTextBounds } from './typography.js';
 
 export const EXPORT_W = 1080;
 export const EXPORT_H = 1920;
@@ -44,7 +45,8 @@ export function renderStory(ctx, W, H, input) {
   ctx.save();
   ctx.setTransform(S, 0, 0, S, 0, 0);
   try {
-    return tpl.render(ctx, env);
+    const { result, texts } = captureTextBounds(ctx, () => tpl(ctx, env));
+    return { ...result, texts };
   } finally {
     ctx.restore();
   }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { coverRect, containRect, insideSafe, rowRects, SAFE, STORY_W, STORY_H } from '../src/story/layout.js';
-import { wrapLines, fitFontSize } from '../src/story/typography.js';
+import { wrapLines, fitFontSize, captureTextBounds } from '../src/story/typography.js';
 import { pickStoryColors } from '../src/story/renderer.js';
 import { defaultStoryState, storyKey, isValidChannel, touchStory, resetStoryForPhoto, state } from '../src/story/story-state.js';
 import { templateIds } from '../src/story/templates.js';
@@ -9,6 +9,18 @@ function mockCtx(charW = 10) {
   const ctx = { font: '10px sans', measureText: (t) => ({ width: t.length * charW }) };
   return ctx;
 }
+
+it('измерение текста сохраняет контекст и возвращает фактические границы', () => {
+  const original = () => {};
+  const ctx = { fillText: original, measureText: () => ({ width: 100, actualBoundingBoxLeft: 40,
+    actualBoundingBoxRight: 60, actualBoundingBoxAscent: 12, actualBoundingBoxDescent: 3 }) };
+  const captured = captureTextBounds(ctx, () => { ctx.fillText('text', 200, 50); return 'rendered'; });
+  expect(captured.result).toBe('rendered');
+  expect(captured.texts).toEqual([{ text: 'text', x: 160, y: 38, w: 100, h: 15 }]);
+  expect(ctx.fillText).toBe(original);
+  expect(() => captureTextBounds(ctx, () => { throw new Error('render failed'); })).toThrow('render failed');
+  expect(ctx.fillText).toBe(original);
+});
 // Мок с учётом кегля (для fitFontSize)
 function mockCtxScaled() {
   const ctx = {

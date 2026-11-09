@@ -1,10 +1,12 @@
 /** Contact sheets: 2×2 монтаж 4 шаблонов для сцен. node scripts/contact-sheets.mjs */
 import { chromium } from 'playwright';
+import { installStoryDiagnostics } from './story-diagnostics.js';
 import { writeFileSync, mkdirSync } from 'fs';
 
 mkdirSync('reference/story-studio', { recursive: true });
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+await page.addInitScript(installStoryDiagnostics);
 const errs = [];
 page.on('pageerror', (e) => errs.push(String(e).slice(0, 120)));
 await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded' });

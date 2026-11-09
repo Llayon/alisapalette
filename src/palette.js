@@ -10,6 +10,18 @@
 import { rgbToOklab, oklabDistance, rgbToOklch, clamp } from './color-science.js';
 
 let __idCounter = 0;
+/**
+ * @typedef {Object} PaletteItem
+ * @property {string} id Stable identity across edits and sorting.
+ * @property {number} r Display sRGB red (0..255).
+ * @property {number} g Display sRGB green (0..255).
+ * @property {number} b Display sRGB blue (0..255).
+ * @property {number} x Normalized photo coordinate.
+ * @property {number} y Normalized photo coordinate.
+ * @property {number} percentage Area share (one decimal place).
+ * @property {{L:number,a:number,b:number}} [center] Assignment centroid; absent for manual samples.
+ * @property {string} role Area and chroma based role.
+ */
 export function resetIdCounter() { __idCounter = 0; }
 export function makeId(prefix = 'pin') {
   __idCounter += 1;
@@ -447,10 +459,6 @@ export function assignRoles(items, pixels) {
   }
   if (!items.length) return;
   const sorted = [...items].sort((a, b) => b.percentage - a.percentage);
-  const totalChromatic = items.filter((it) => {
-    const lch = rgbToOklch(it);
-    return lch.C >= 0.04;
-  });
 
   sorted.forEach((it, idx) => {
     if (idx < 2 && it.percentage >= 12) {
@@ -465,14 +473,13 @@ export function assignRoles(items, pixels) {
     const lch = rgbToOklch(it);
     if (it.percentage <= 10 && lch.C >= 0.06) {
       let minD = Infinity;
-      for (const d of doms) minD = Math.min(minD, oklabDistance(it.center, d.center));
+      for (const d of doms) minD = Math.min(minD, oklabDistance(it.center || labOf(it), d.center || labOf(d)));
       if (minD >= 0.12 || doms.length === 0) {
         it.role = 'accent';
         it.roleNote = 'Заметный цветовой акцент (насыщенный, небольшая площадь)';
       }
     }
   }
-  void totalChromatic;
   void pixels;
 }
 
@@ -480,11 +487,13 @@ export function assignRoles(items, pixels) {
 export function recalculateShares(palette, pixels) {
   if (!palette.length || !pixels.length) return;
   for (const it of palette) it.count = 0;
+  // A manual pin's display color is constant throughout this assignment pass.
+  const centers = palette.map(item => item.center || labOf(item));
   for (const p of pixels) {
     const lab = labOf(p);
     let best = 0, bd = Infinity;
     for (let c = 0; c < palette.length; c++) {
-      const d = distLab(lab, palette[c].center || labOf(palette[c]));
+      const d = distLab(lab, centers[c]);
       if (d < bd) { bd = d; best = c; }
     }
     palette[best].count++;
@@ -499,6 +508,7 @@ export function recalculateShares(palette, pixels) {
   for (let k = 0; k < remainder && k < frac.length; k++) final10[frac[k].i] += 1;
   palette.forEach((it, i) => { it.percentage = final10[i] / 10; });
   palette.sort((a, b) => b.percentage - a.percentage);
+  assignRoles(palette, pixels);
 }
 
 /** Единая точка входа для UI. algorithm: 'photo' | 'kmeans' | 'mediancut' | 'histogram'. */
@@ -514,7 +524,7 @@ export function analyzePixels(pixels, { algorithm = 'photo', colorCount = 6, min
 export function sortPaletteItems(items, sortBy) {
   const arr = [...items];
   if (sortBy === 'luminance') {
-    arr.sort((a, b) => b.center.L - a.center.L);
+    arr.sort((a, b) => rgbToOklab(b).L - rgbToOklab(a).L);
   } else if (sortBy === 'hue') {
     const key = (it) => {
       const lch = rgbToOklch(it);

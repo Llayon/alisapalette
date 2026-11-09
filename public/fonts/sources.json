@@ -1,0 +1,146 @@
+[
+  {
+    "family": "Cormorant Garamond",
+    "subset": "cyrillic-ext",
+    "file": "cormorant-garamond-cyrillic-ext.woff2",
+    "bytes": 65692,
+    "source": "https://fonts.gstatic.com/l/font?kit=co3hmX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_iE9eHjmeyOkkv20ULzTxhhaP9w&skey=a863d1376a24bd7a&v=v21",
+    "sha256": "f874001ca8e630702216dccfaaac08512946a8aa7b216e2e715a5120db75333b"
+  },
+  {
+    "family": "Cormorant Garamond",
+    "subset": "cyrillic",
+    "file": "cormorant-garamond-cyrillic.woff2",
+    "bytes": 50968,
+    "source": "https://fonts.gstatic.com/l/font?kit=co3hmX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_iE9eHjmeyOkkv20ULzTxhhTP9w&skey=a863d1376a24bd7a&v=v21",
+    "sha256": "0108042f08d4ec7cfdd96b649c172283493a2e90c020e65869ffbba407992a6d"
+  },
+  {
+    "family": "Cormorant Garamond",
+    "subset": "vietnamese",
+    "file": "cormorant-garamond-vietnamese.woff2",
+    "bytes": 43568,
+    "source": "https://fonts.gstatic.com/l/font?kit=co3hmX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_iE9eHjmeyOkkv20ULzTxhhYP9w&skey=a863d1376a24bd7a&v=v21",
+    "sha256": "2c426d38b1108c80b7361dba3157ad19074aed993491aa9c0f22d8c88455b288"
+  },
+  {
+    "family": "Cormorant Garamond",
+    "subset": "latin-ext",
+    "file": "cormorant-garamond-latin-ext.woff2",
+    "bytes": 59960,
+    "source": "https://fonts.gstatic.com/l/font?kit=co3hmX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_iE9eHjmeyOkkv20ULzTxhhZP9w&skey=a863d1376a24bd7a&v=v21",
+    "sha256": "7f8c655f11cae1aa59ea954e025cb4f42739ece3fa9414ac40f6d1d1c1f99ba1"
+  },
+  {
+    "family": "Cormorant Garamond",
+    "subset": "latin",
+    "file": "cormorant-garamond-latin.woff2",
+    "bytes": 36664,
+    "source": "https://fonts.gstatic.com/l/font?kit=co3hmX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_iE9eHjmeyOkkv20ULzTxhhXP9w&skey=a863d1376a24bd7a&v=v21",
+    "sha256": "625d98acee80967f265b6ba697ee17d1f97672160127711ef62d98a3a28df067"
+  },
+  {
+    "family": "Inter",
+    "subset": "cyrillic-ext",
+    "file": "inter-cyrillic-ext.woff2",
+    "bytes": 58748,
+    "source": "https://fonts.gstatic.com/l/font?kit=UcCB3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfU5NJeWUdIOjBeTGiXZdAD2M&skey=c491285d6722e4fa&v=v20",
+    "sha256": "2ed9d3531c262c2389e526091ff8a16ff38c5e31abb70a5e5cee29f85edfbe2f"
+  },
+  {
+    "family": "Inter",
+    "subset": "cyrillic",
+    "file": "inter-cyrillic.woff2",
+    "bytes": 47100,
+    "source": "https://fonts.gstatic.com/l/font?kit=UcCB3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfU5NJeWUdIOjBeTGiXZdJD2M&skey=c491285d6722e4fa&v=v20",
+    "sha256": "b8255301a4a11dd5ecb29f39a0d5bbb37589e52e0b0bb7d99057768503f70be9"
+  },
+  {
+    "family": "Inter",
+    "subset": "greek-ext",
+    "file": "inter-greek-ext.woff2",
+    "bytes": 53676,
+    "source": "https://fonts.gstatic.com/l/font?kit=UcCB3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfU5NJeWUdIOjBeTGiXZdBD2M&skey=c491285d6722e4fa&v=v20",
+    "sha256": "9c35ba156c750f8b347f651b9735556fe9b2ac0d2fe3c4174d31604c26c57eff"
+  },
+  {
+    "family": "Inter",
+    "subset": "greek",
+    "file": "inter-greek.woff2",
+    "bytes": 48588,
+    "source": "https://fonts.gstatic.com/l/font?kit=UcCB3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfU5NJeWUdIOjBeTGiXZdOD2M&skey=c491285d6722e4fa&v=v20",
+    "sha256": "8febfba074638ea2c3667bcd58a9053b895252403e46908034fd4a7aa3003216"
+  },
+  {
+    "family": "Inter",
+    "subset": "vietnamese",
+    "file": "inter-vietnamese.woff2",
+    "bytes": 41084,
+    "source": "https://fonts.gstatic.com/l/font?kit=UcCB3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfU5NJeWUdIOjBeTGiXZdCD2M&skey=c491285d6722e4fa&v=v20",
+    "sha256": "5c68b58aea16afedef58aeccb1996e364e34fdd27b01002ced3b505da0b08b73"
+  },
+  {
+    "family": "Inter",
+    "subset": "latin-ext",
+    "file": "inter-latin-ext.woff2",
+    "bytes": 86888,
+    "source": "https://fonts.gstatic.com/l/font?kit=UcCB3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfU5NJeWUdIOjBeTGiXZdDD2M&skey=c491285d6722e4fa&v=v20",
+    "sha256": "bac70dfe711084be57af010f17ffc41af3297c304d29509ce7f916ad78e70780"
+  },
+  {
+    "family": "Inter",
+    "subset": "latin",
+    "file": "inter-latin.woff2",
+    "bytes": 38380,
+    "source": "https://fonts.gstatic.com/l/font?kit=UcCB3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfU5NJeWUdIOjBeTGiXZdND2M&skey=c491285d6722e4fa&v=v20",
+    "sha256": "d53ba74b75bb21078310d98663056d6458a11c71bb8031d3b0a09e509579d3d5"
+  },
+  {
+    "family": "JetBrains Mono",
+    "subset": "cyrillic-ext",
+    "file": "jetbrains-mono-cyrillic-ext.woff2",
+    "bytes": 36788,
+    "source": "https://fonts.gstatic.com/l/font?kit=tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYXHKPx3cwg&skey=48ad01c60053c2ae&v=v24",
+    "sha256": "05719e22ecca208939f502d1018cb5ca7cde65bf064b024e5b3e50afbcf7931b"
+  },
+  {
+    "family": "JetBrains Mono",
+    "subset": "cyrillic",
+    "file": "jetbrains-mono-cyrillic.woff2",
+    "bytes": 36548,
+    "source": "https://fonts.gstatic.com/l/font?kit=tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYXHKPxTcwg&skey=48ad01c60053c2ae&v=v24",
+    "sha256": "98758047eb1d9eb292f9f90137635c709415005db4535623adbfbde095da6240"
+  },
+  {
+    "family": "JetBrains Mono",
+    "subset": "greek",
+    "file": "jetbrains-mono-greek.woff2",
+    "bytes": 34956,
+    "source": "https://fonts.gstatic.com/l/font?kit=tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYXHKPxPcwg&skey=48ad01c60053c2ae&v=v24",
+    "sha256": "d9ae31a179b449f1e4eb719bd8d4f5ae4aca9411dd13294fdb2ea4f7789b1c94"
+  },
+  {
+    "family": "JetBrains Mono",
+    "subset": "vietnamese",
+    "file": "jetbrains-mono-vietnamese.woff2",
+    "bytes": 33916,
+    "source": "https://fonts.gstatic.com/l/font?kit=tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYXHKPx_cwg&skey=48ad01c60053c2ae&v=v24",
+    "sha256": "c92b2cc78c994ee246df333f035570f0ed9bd8c8eeb34e759afe80b6db791c9b"
+  },
+  {
+    "family": "JetBrains Mono",
+    "subset": "latin-ext",
+    "file": "jetbrains-mono-latin-ext.woff2",
+    "bytes": 36168,
+    "source": "https://fonts.gstatic.com/l/font?kit=tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYXHKPx7cwg&skey=48ad01c60053c2ae&v=v24",
+    "sha256": "97f3b2bfb723701727245e377dc3e1787fe50dfe4b0d1e4a3e6305294801e90f"
+  },
+  {
+    "family": "JetBrains Mono",
+    "subset": "latin",
+    "file": "jetbrains-mono-latin.woff2",
+    "bytes": 31656,
+    "source": "https://fonts.gstatic.com/l/font?kit=tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYXHKPxDcwg&skey=48ad01c60053c2ae&v=v24",
+    "sha256": "500a87d4361e2d6228c5c96131f935d9549e3499cf16f612c507a90c87613bad"
+  }
+]

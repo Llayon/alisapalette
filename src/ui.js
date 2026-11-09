@@ -2,11 +2,11 @@
  * UI-рендер: фото -> палитра -> сочетания -> сохранить.
  * Чистые функции рендера + адаптеры к новому движку (пины, экспорт, парфюм).
  */
-import { rgbToHex, hexToRgb, textOnColor, rgbToOklch, oklabDistanceRgb, relativeLuminance } from './color-science.js';
+import { rgbToHex, hexToRgb, textOnColor, rgbToOklch, oklabDistanceRgb } from './color-science.js';
 import { getPoeticColorName } from './poetic.js';
 import { trioForColor, classicalHarmonies, inPhotoCombinations } from './harmony.js';
 import { state, selectedColor } from './state.js';
-import { matchProducts, OLFACTORY_ARCHETYPES, getClosestOlfactoryArchetype, computeAccordCosineSimilarity, calculateSprayDosage, PERFUME_CATALOG } from './perfume.js';
+import { matchProducts, bloggerProducts, getClosestOlfactoryArchetype, computeAccordCosineSimilarity, calculateSprayDosage, PERFUME_CATALOG } from './perfume.js';
 
 export function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -16,7 +16,7 @@ export function formatColorValue(c) {
   if (state.activeFormat === 'rgb') return `rgb(${c.r}, ${c.g}, ${c.b})`;
   if (state.activeFormat === 'hsl') {
     const { h, s, l } = rgbToHslLocal(c.r, c.g, c.b);
-    return `hsl(${h}°, ${s}%, ${l}%)`;
+    return `hsl(${h}deg, ${s}%, ${l}%)`;
   }
   return rgbToHex(c.r, c.g, c.b);
 }
@@ -123,7 +123,6 @@ export function renderProportion(barEl, legendEl, gridEl, badgeEl, onSelect) {
   // Фактическое распределение vs предлагаемая композиция 60-30-10 (разделены!).
   if (sorted.length >= 1) {
     const top3 = sorted.slice(0, 3);
-    const sum3 = top3.reduce((s, c) => s + c.percentage, 0);
     const factHtml = top3.map((c, i) => {
       const hex = rgbToHex(c.r, c.g, c.b);
       const role = ['Доминанта', 'Вторичный', 'Третий'][i] || '';
@@ -136,7 +135,6 @@ export function renderProportion(barEl, legendEl, gridEl, badgeEl, onSelect) {
     gridEl.innerHTML = `<div class="notice" style="grid-column:1/-1">Фактическое распределение цветов фотографии — выше. Ниже — <b>стилистическая рекомендация</b> «60–30–10» (не вердикт фото, композиция для образа/интерьера).</div>`
       + factHtml
       + `<div class="notice" style="grid-column:1/-1"><b>Предлагаемая композиция 60–30–10:</b> ${proposal.text}<br><span class="explain">${proposal.detail}</span></div>`;
-    void sum3;
     badgeEl.textContent = `Топ-3: ${top3.map((c) => c.percentage.toFixed(0)).join(' / ')}%`;
   }
 }
@@ -177,7 +175,22 @@ export function propose603010(sorted) {
 // ---------- palette cards ----------
 
 let lastCardSig = '';
+export function updatePaletteSelection(listEl) {
+  for (const card of listEl.querySelectorAll('.pal-card')) {
+    const selected = card.dataset.id === state.selectedColorId;
+    card.classList.toggle('sel', selected);
+    card.querySelector('.pal-main').setAttribute('aria-pressed', String(selected));
+  }
+}
+
 export function renderPaletteCards(listEl, onSelect, onCopy, onRemove) {
+  const active = document.activeElement;
+  const focusedCard = active?.closest('.pal-card');
+  const focus = focusedCard && listEl.contains(focusedCard) ? {
+    id: focusedCard.dataset.id,
+    index: [...listEl.children].indexOf(focusedCard),
+    action: active.dataset.act
+  } : null;
   listEl.innerHTML = '';
   if (!state.palette.length) {
     listEl.innerHTML = '<div class="notice">Палитра появится после загрузки фото.</div>';
@@ -185,7 +198,7 @@ export function renderPaletteCards(listEl, onSelect, onCopy, onRemove) {
     return;
   }
   // Анимация появления — только при смене состава палитры, не при каждом рендере.
-  const sig = state.palette.map((c) => c.id + c.r + ',' + c.g + ',' + c.b).join('|');
+  const sig = state.palette.map(c => c.id).sort().join('|');
   const animate = sig !== lastCardSig;
   lastCardSig = sig;
   state.palette.forEach((item, index) => {
@@ -195,6 +208,7 @@ export function renderPaletteCards(listEl, onSelect, onCopy, onRemove) {
     const card = document.createElement('div');
     card.className = 'pal-card' + (sel ? ' sel' : '') + (animate ? ' anim' : '');
     card.setAttribute('role', 'listitem');
+    card.dataset.id = item.id;
     const roleLabel = item.role === 'dominant' ? 'Основной' : item.role === 'accent' ? 'Акцент' : 'Второстепенный';
     card.innerHTML = `
       <button type="button" class="pal-main" aria-pressed="${sel}" aria-label="Выбрать ${esc(poetic)}, ${hex}">
@@ -221,12 +235,26 @@ export function renderPaletteCards(listEl, onSelect, onCopy, onRemove) {
     card.addEventListener('mouseleave', () => { state.activeHighlightId = null; });
     listEl.appendChild(card);
   });
+  if (focus) {
+    const cards = [...listEl.querySelectorAll('.pal-card')];
+    const card = cards.find(card => card.dataset.id === focus.id) || cards[Math.min(focus.index, cards.length - 1)];
+    const button = card?.querySelector(focus.action ? `[data-act="${focus.action}"]` : '.pal-main') || card?.querySelector('.pal-main');
+    button?.focus({ preventScroll: true });
+  }
 }
 
 // ---------- harmony widget ----------
 
+function swatchRow(hex, name, source = 'добавить', label = name) {
+  return `<button type="button" class="swrow" data-hex="${hex}" data-name="${esc(name)}"><span class="sw" style="background:${hex}"></span><span class="hx">${hex}</span><span class="nn">${esc(label)}</span><span class="src">${esc(source)}</span></button>`;
+}
+
 export function renderHarmony(container, onCopyHex, onCopyCombo) {
   container.innerHTML = '';
+  container.onclick = event => {
+    const row = event.target.closest('.swrow');
+    if (row) onCopyHex(row.dataset.hex, row.dataset.name);
+  };
   const t0 = performance.now();
   const base = selectedColor();
   if (!base) {
@@ -256,10 +284,9 @@ export function renderHarmony(container, onCopyHex, onCopyCombo) {
         const c = m.p;
         const hx = rgbToHex(c.r, c.g, c.b);
         const nm = getPoeticColorName(c.r, c.g, c.b);
-        return `<div class="swrow" data-hex="${hx}" data-name="${esc(nm)}"><span class="sw" style="background:${hx}"></span><span class="hx">${hx}</span><span class="nn">${esc(nm)} · ${c.percentage.toFixed(1)}%</span><span class="src">из фото</span></div>`;
+        return swatchRow(hx, nm, 'из фото', `${nm} · ${c.percentage.toFixed(1)}%`);
       }).join('');
-      row.innerHTML = `<div style="font-size:12px;font-weight:700;margin:6px 0 2px">${esc(f.title)}</div><div class="explain">${esc(f.explain)}</div>${members}`;
-      row.querySelectorAll('.swrow').forEach((r) => r.addEventListener('click', () => onCopyHex(r.dataset.hex, r.dataset.name || r.dataset.hex)));
+      row.innerHTML = `<div style="font-size:0.75rem;font-weight:700;margin:6px 0 2px">${esc(f.title)}</div><div class="explain">${esc(f.explain)}</div>${members}`;
       photoBox.appendChild(row);
     }
   } else {
@@ -269,7 +296,7 @@ export function renderHarmony(container, onCopyHex, onCopyCombo) {
 
   // 2) Какие цвета можно добавить (трио)
   const trioWrap = document.createElement('div');
-  trioWrap.innerHTML = `<h3 style="font-size:13px;margin:4px 0 0">Какие цвета можно добавить</h3>
+  trioWrap.innerHTML = `<h3 style="font-size:0.8125rem;margin:4px 0 0">Какие цвета можно добавить</h3>
     <p class="explain">Сгенерированные рекомендации на основе OKLCH (не найдены в кадре). Нажмите на оттенок — HEX скопируется.</p>`;
   container.appendChild(trioWrap);
 
@@ -280,17 +307,10 @@ export function renderHarmony(container, onCopyHex, onCopyCombo) {
     el.className = 'combo';
     const total = combo.swatches.length;
     const strip = combo.swatches.map((s) => `<div style="--w:${(100 / total).toFixed(1)};flex:${(100 / total).toFixed(1)} 1 0%;background:${s.hex}" title="${esc(s.name)} ${s.hex}"></div>`).join('');
-    const rows = combo.swatches.map((s) => `
-      <div class="swrow" data-hex="${s.hex}" data-name="${esc(s.name)}">
-        <span class="sw" style="background:${s.hex}"></span>
-        <span class="hx">${s.hex}</span>
-        <span class="nn">${esc(s.name)}</span>
-        <span class="src">${s.badge || (s.source === 'photo' ? 'ваш цвет' : 'добавить')}</span>
-      </div>`).join('');
+    const rows = combo.swatches.map(s => swatchRow(s.hex, s.name, s.badge || (s.source === 'photo' ? 'ваш цвет' : 'добавить'))).join('');
     el.innerHTML = `<h3>${combo.title}</h3><p>${esc(combo.explain)}</p>
       <div class="strip">${strip}</div><div class="swatches">${rows}</div>
       <button class="btn small copybtn" style="width:100%;justify-content:center">Скопировать сочетание</button>`;
-    el.querySelectorAll('.swrow').forEach((r) => r.addEventListener('click', () => onCopyHex(r.dataset.hex, r.dataset.name)));
     el.querySelector('.copybtn').addEventListener('click', () => onCopyCombo(combo));
     grid.appendChild(el);
   }
@@ -306,12 +326,11 @@ export function renderHarmony(container, onCopyHex, onCopyCombo) {
   const cards = order.map((k) => {
     const h = harm[k];
     const strip = h.swatches.map((s) => `<div style="flex:1 1 0%;background:${s.hex}" title="${esc(s.name)} ${s.hex}"></div>`).join('');
-    const rows = h.swatches.map((s) => `<div class="swrow" data-hex="${s.hex}" data-name="${esc(s.name)}"><span class="sw" style="background:${s.hex}"></span><span class="hx">${s.hex}</span><span class="nn">${esc(s.name)}</span><span class="src">добавить</span></div>`).join('');
+    const rows = h.swatches.map(s => swatchRow(s.hex, s.name)).join('');
     return `<div class="combo"><h3>${h.title}</h3><p>${esc(h.explain)}</p><div class="strip">${strip}</div>${rows}</div>`;
   }).join('');
   det.innerHTML = `<summary>Классические гармонии (6 типов) — для ${esc(baseName)}</summary><div class="body"><div class="harmgrid">${cards}</div>
     <div class="explain">Пояснение «почему сочетается»: спокойные — близкие hue; контрастные — противоположные области круга со сдержанной насыщенностью; нейтральные — тёплые/холодные ступени светлоты. Это эвристики композиции, а не научная оценка красоты.</div></div>`;
-  det.querySelectorAll('.swrow').forEach((r) => r.addEventListener('click', () => onCopyHex(r.dataset.hex, r.dataset.name)));
   container.appendChild(det);
 
   state.timings.harmony = Math.round(performance.now() - t0);
@@ -359,7 +378,7 @@ export function renderPerfume(bannerEl, pyramidEl, dosageEl, perfGridEl, radarCa
   bannerEl.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;min-width:0">
       <span style="width:42px;height:42px;border-radius:12px;flex:none;border:1px solid rgba(255,255,255,.2);background:linear-gradient(135deg, ${topHex}, ${heartHex}, ${baseHex})"></span>
-      <span style="min-width:0"><span style="font-size:10px;color:var(--amber);text-transform:uppercase;letter-spacing:.06em">Ольфакторное семейство кадра</span><br>
+      <span style="min-width:0"><span style="font-size:0.625rem;color:var(--amber);text-transform:uppercase;letter-spacing:.06em">Ольфакторное семейство кадра</span><br>
       <b>${esc(baseArch.poeticTitle)}</b><br><span class="explain">${esc(baseArch.familyName)}</span></span>
     </div>`;
   const tiers = [
@@ -412,7 +431,6 @@ function drawRadar(canvas, vector) {
 
 export function renderProducts(gridEl, onCopy) {
   if (!state.palette.length) { gridEl.innerHTML = '<div class="notice">Находки подберутся после разбора фото.</div>'; return; }
-  const { bloggerProducts } = require_products();
   const top = matchProducts(state.palette, bloggerProducts, 4);
   gridEl.innerHTML = '';
   for (const item of top) {
@@ -428,9 +446,3 @@ export function renderProducts(gridEl, onCopy) {
     gridEl.appendChild(el);
   }
 }
-
-// bloggerProducts живёт в perfume.js (единый источник), ленивый импорт без циклов:
-import { bloggerProducts as _bp } from './perfume.js';
-function require_products() { return { bloggerProducts: _bp }; }
-void OLFACTORY_ARCHETYPES;
-void relativeLuminance;

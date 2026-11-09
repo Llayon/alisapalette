@@ -6,14 +6,21 @@ import { renderStory, EXPORT_W, EXPORT_H, FALLBACK_W, FALLBACK_H } from './rende
 import { SERIF, SANS, MONO } from './templates.js';
 
 export async function ensureStoryFonts() {
+  let timeout;
   try {
-    await Promise.all([
-      document.fonts.load('700 90px "Cormorant Garamond"', 'Палитра'),
-      document.fonts.load('600 34px Inter', 'Палитра'),
-      document.fonts.load('700 34px "JetBrains Mono"', '#FF0080')
+    const sample = 'Палитра ChromaStyle #0123456789';
+    const families = [
+      ['"Cormorant Garamond"', [600, 700]],
+      ['Inter', [400, 500, 600, 700]],
+      ['"JetBrains Mono"', [400, 600, 700]]
+    ];
+    await Promise.race([
+      Promise.allSettled(families.flatMap(([family, weights]) =>
+        weights.map(weight => document.fonts.load(`${weight} 40px ${family}`, sample)))),
+      new Promise(resolve => { timeout = setTimeout(resolve, 2500); })
     ]);
-    await document.fonts.ready;
   } catch { /* fallback-шрифты */ }
+  finally { clearTimeout(timeout); }
 }
 
 function makeCanvas(w, h) {
