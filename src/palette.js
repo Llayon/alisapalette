@@ -10,6 +10,7 @@
 import { rgbToOklab, oklabDistance, rgbToOklch, clamp } from './color-science.js';
 
 let __idCounter = 0;
+const reservedIds = new Set();
 /**
  * @typedef {Object} PaletteItem
  * @property {string} id Stable identity across edits and sorting.
@@ -22,10 +23,15 @@ let __idCounter = 0;
  * @property {{L:number,a:number,b:number}} [center] Assignment centroid; absent for manual samples.
  * @property {string} role Area and chroma based role.
  */
-export function resetIdCounter() { __idCounter = 0; }
+export function resetIdCounter() { __idCounter = 0; reservedIds.clear(); }
+export function reservePaletteIds(items) {
+  for (const item of items) reservedIds.add(item.id);
+}
 export function makeId(prefix = 'pin') {
-  __idCounter += 1;
-  return `${prefix}-${__idCounter}`;
+  let id;
+  do { id = `${prefix}-${++__idCounter}`; } while (reservedIds.has(id));
+  reservedIds.add(id);
+  return id;
 }
 
 /** Маппинг старого слайдера minDelta (10..70) в порог OKLab. 28 -> ~0.075. */

@@ -12,6 +12,22 @@ function setup() {
 }
 
 describe('photo loading order', () => {
+  it('keeps the bitmap alive during an async commit and invalidates superseded commits', async () => {
+    let release, entered;
+    const started = new Promise(resolve => { entered = resolve; });
+    const gate = new Promise(resolve => { release = resolve; });
+    const image = { close: vi.fn() }, applied = vi.fn();
+    const loader = createPhotoLoader({ decode: async () => image,
+      commit: async (source, file, ms, isCurrent) => {
+        entered(); await gate;
+        if (isCurrent()) applied();
+      }, onError: vi.fn() });
+    const work = loader.load('first'); await started;
+    expect(image.close).not.toHaveBeenCalled();
+    loader.invalidate(); release(); await work;
+    expect(applied).not.toHaveBeenCalled();
+    expect(image.close).toHaveBeenCalledOnce();
+  });
   it('only commits the last selection and closes both bitmaps', async () => {
     const { loader, pending, commit } = setup();
     const first = loader.load('first'), second = loader.load('second');

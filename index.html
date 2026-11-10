@@ -38,6 +38,16 @@
   </header>
 
   <main class="wrap">
+    <div id="projectPersistence" class="stage-actions" aria-label="Сохранение работы">
+      <button id="openProjectLibrary" class="btn small" type="button" data-project-launch>Мои палитры</button>
+      <button id="saveProjectToLibrary" class="btn small" type="button" data-project-launch>Сохранить в мои палитры</button>
+      <button id="downloadCurrentProject" class="btn small" type="button" data-project-launch>Скачать проект</button>
+      <span id="projectTransferStatus" class="timings" role="status"></span>
+      <span id="projectSaveStatus" class="timings" role="status">Открываем последнюю работу…</span>
+      <button id="retryProjectSave" class="btn small" type="button" hidden>Повторить сохранение</button>
+      <button id="reloadProject" class="btn small" type="button" hidden>Открыть сохранённую версию</button>
+      <button id="copyConflictedProject" class="btn small" type="button" hidden>Сохранить копию</button>
+    </div>
     <section class="hero" aria-labelledby="heroTitle">
       <h1 id="heroTitle" class="serif">Найдите цвета своего кадра</h1>
       <p class="hero-sub">Загрузите фото — покажем его палитру и красивые сочетания. Всё обрабатывается на вашем устройстве.</p>
@@ -292,5 +302,35 @@
   <footer class="foot wrap">ChromaStyle · палитра и сочетания считаются локально в вашем браузере · перцепционная метрика — евклидово расстояние в OKLab (не CIEDE2000) · поэтические имена — подписи, точные значения — HEX</footer>
 
   <script type="module" src="/src/main.js"></script>
+  <dialog id="projectLibrary" class="project-library project-dialog" aria-labelledby="projectLibraryTitle">
+    <div class="rowline">
+      <h2 id="projectLibraryTitle">Мои палитры</h2>
+      <button id="closeProjectLibrary" class="btn small" type="button" aria-label="Закрыть библиотеку">Закрыть</button>
+    </div>
+    <p class="project-hint">Сохранённые работы в этом браузере на этом устройстве.</p>
+    <div class="stage-actions">
+      <button id="librarySaveCurrent" class="btn small primary" type="button">Сохранить текущую работу</button>
+      <button id="refreshProjectLibrary" class="btn small" type="button">Обновить</button>
+      <button id="importProjectButton" class="btn small" type="button">Импортировать проект</button>
+      <input id="projectFileInput" type="file" accept=".json,application/json" hidden>
+    </div>
+    <p id="projectLibraryError" class="notice notice-error" role="alert" hidden></p>
+    <p id="projectLibraryMessage" role="status"></p>
+    <div id="projectLibraryGrid" class="project-grid"></div>
+  </dialog>
+  <dialog id="projectEditor" class="project-library project-editor" aria-labelledby="projectEditorTitle">
+    <form id="projectEditorForm">
+      <h2 id="projectEditorTitle">Сохранить палитру</h2>
+      <p id="projectEditorDescription"></p>
+      <label id="projectNameLabel" class="project-name">Название
+        <input id="projectNameInput" type="text" maxlength="120" required autocomplete="off">
+      </label>
+      <p id="projectEditorError" class="notice notice-error" role="alert" hidden></p>
+      <div class="stage-actions">
+        <button id="projectEditorConfirm" class="btn primary" type="submit">Сохранить</button>
+        <button id="projectEditorCancel" class="btn" type="button">Отмена</button>
+      </div>
+    </form>
+  </dialog>
 </body>
 </html>

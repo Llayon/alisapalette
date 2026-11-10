@@ -15,7 +15,7 @@ export default defineConfig({
     { name: 'mobile-390', testIgnore: 'browser-smoke.spec.js', use: { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true } },
     { name: 'mobile-430', testIgnore: 'browser-smoke.spec.js', use: { viewport: { width: 430, height: 932 }, hasTouch: true, isMobile: true } },
     { name: 'desktop-1280', testIgnore: 'browser-smoke.spec.js', use: { viewport: { width: 1280, height: 800 } } },
-    { name: 'firefox-smoke', testMatch: 'browser-smoke.spec.js', use: { browserName: 'firefox', viewport: { width: 1280, height: 800 } } },
-    { name: 'webkit-smoke', testMatch: 'browser-smoke.spec.js', use: { browserName: 'webkit', viewport: { width: 1280, height: 800 } } }
+    { name: 'firefox-smoke', testMatch: ['browser-smoke.spec.js', 'projects-*.spec.js'], use: { browserName: 'firefox', viewport: { width: 1280, height: 800 } } },
+    { name: 'webkit-smoke', testMatch: ['browser-smoke.spec.js', 'projects-*.spec.js'], use: { browserName: 'webkit', viewport: { width: 1280, height: 800 } } }
   ]
 });

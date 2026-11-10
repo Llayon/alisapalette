@@ -1,13 +1,16 @@
 import { $ } from './dom.js';
 import { state, setSelected, resetPhotoState } from './state.js';
 import { stratifiedSample, drawToAnalysis, SAMPLE_MAX_DIM } from './sampling.js';
-import { analyzePixels } from './palette.js';
+import { analyzePixels, reservePaletteIds } from './palette.js';
+import { state as story, touchStory } from './story/story-state.js';
 import { createPhotoLoader } from './photo-loader.js';
 import { createDemoScene } from './demo-scenes.js';
 
-export function createPhotoController({ mainCanvas, palette, storyStudio, haptic }) {
+export function createPhotoController({ mainCanvas, palette, storyStudio, haptic, onPhotoChange = () => {}, onBeforePhotoChange = () => {} }) {
   const ctx = mainCanvas.getContext('2d', { willReadFrequently: true });
   const analysisCanvas = document.createElement('canvas');
+  let pendingLoads = 0;
+  let sourceSequence = 0;
 
   function preparePhotoAnalysis(source) {
     const t0 = performance.now();
@@ -83,26 +86,37 @@ export function createPhotoController({ mainCanvas, palette, storyStudio, haptic
     }
   }
 
-  function commitPhoto(prepared, { isDemo, label, dimensions, decodeMs = 0 }) {
-    const result = preparePhotoAnalysis(prepared);
+  function commitPhoto(prepared, { isDemo, label, dimensions, decodeMs = 0 }, isCurrent = () => true) {
+    let result = preparePhotoAnalysis(prepared);
+    const analysisKey = () => JSON.stringify([state.algorithm, state.colorCount, state.minDelta]);
+    const preparedKey = analysisKey();
     storyStudio.beforePhotoChange();
-    mainCanvas.width = prepared.width; mainCanvas.height = prepared.height;
-    ctx.drawImage(prepared, 0, 0);
-    resetPhotoState();
-    storyStudio.resetForPhoto();
-    state.timings.decode = decodeMs;
-    state.isDemo = isDemo;
-    state.photoLabel = label;
-    updatePhotoBadge();
-    $('imageDimensions').textContent = dimensions;
-    applyPhotoAnalysis(result);
-    storyStudio.afterPhotoChange();
-    if (!isDemo) haptic('success');
+    palette.settlePending();
+    palette.cancelPending();
+    const apply = accepted => {
+      if (accepted === false || !isCurrent()) { storyStudio.afterPhotoChange(); return; }
+      if (preparedKey !== analysisKey()) result = preparePhotoAnalysis(prepared);
+      mainCanvas.width = prepared.width; mainCanvas.height = prepared.height;
+      ctx.drawImage(prepared, 0, 0);
+      resetPhotoState();
+      storyStudio.resetForPhoto();
+      state.timings.decode = decodeMs;
+      state.isDemo = isDemo;
+      state.photoLabel = label;
+      updatePhotoBadge();
+      $('imageDimensions').textContent = dimensions;
+      applyPhotoAnalysis(result);
+      storyStudio.afterPhotoChange();
+      onPhotoChange();
+      if (!isDemo) haptic('success');
+    };
+    const accepted = onBeforePhotoChange(isCurrent);
+    return accepted?.then ? accepted.then(apply) : apply(accepted);
   }
 
   const photoLoader = createPhotoLoader({
     decode: decodeFile,
-    commit(bmp, file, decodeMs) {
+    commit(bmp, file, decodeMs, isCurrent) {
       const natW = bmp.width, natH = bmp.height;
       if (!natW || !natH) throw new Error('empty-image');
       const ratio = Math.min(1, 1400 / Math.max(natW, natH));
@@ -111,7 +125,7 @@ export function createPhotoController({ mainCanvas, palette, storyStudio, haptic
       const prepared = document.createElement('canvas');
       prepared.width = w; prepared.height = h;
       prepared.getContext('2d').drawImage(bmp, 0, 0, w, h);
-      commitPhoto(prepared, { isDemo: false, label: file.name || 'Ваше фото', dimensions: natW + ' \u00d7 ' + natH + ' px', decodeMs });
+      return commitPhoto(prepared, { isDemo: false, label: file.name || 'Ваше фото', dimensions: natW + ' \u00d7 ' + natH + ' px', decodeMs }, isCurrent);
     },
     onError() {
       $('loadError').hidden = false;
@@ -121,6 +135,7 @@ export function createPhotoController({ mainCanvas, palette, storyStudio, haptic
 
   async function handleImageFile(file) {
     if (!file) return;
+    sourceSequence++;
     photoLoader.invalidate();
     const errBox = $('loadError');
     errBox.hidden = true;
@@ -129,7 +144,8 @@ export function createPhotoController({ mainCanvas, palette, storyStudio, haptic
       errBox.textContent = 'Нужен файл-картинка: JPEG, PNG или WebP.';
       return;
     }
-    await photoLoader.load(file);
+    pendingLoads++;
+    try { await photoLoader.load(file); } finally { pendingLoads--; }
   }
 
   $('fileInput').addEventListener('change', (e) => {
@@ -154,10 +170,11 @@ export function createPhotoController({ mainCanvas, palette, storyStudio, haptic
   // ---------- демо-сцены (процедурные, детерминированные) ----------
 
   window.loadPresetSample = function (type) {
+    const request = ++sourceSequence;
     photoLoader.invalidate();
     $('loadError').hidden = true;
     const { canvas, label } = createDemoScene(type);
-    commitPhoto(canvas, { isDemo: true, label, dimensions: canvas.width + ' \u00d7 ' + canvas.height + ' px' });
+    return commitPhoto(canvas, { isDemo: true, label, dimensions: canvas.width + ' \u00d7 ' + canvas.height + ' px' }, () => request === sourceSequence);
   };
 
   // Главный CTA и hero-кнопка открывают выбор файла (нативная кнопка — доступна с клавиатуры).
@@ -174,5 +191,30 @@ export function createPhotoController({ mainCanvas, palette, storyStudio, haptic
     document.querySelector('.flow-photo').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  return { analyzeImagePalette, handleImageFile };
+  function restoreProject({ project, canvas }) {
+    // Prepare derived data before touching the current image or palette.
+    const image = drawToAnalysis(canvas, analysisCanvas, SAMPLE_MAX_DIM);
+    const pixels = stratifiedSample(image);
+    photoLoader.invalidate();
+    sourceSequence++;
+    palette.cancelPending();
+    storyStudio.beforePhotoChange();
+    mainCanvas.width = canvas.width; mainCanvas.height = canvas.height;
+    ctx.drawImage(canvas, 0, 0);
+    resetPhotoState();
+    Object.assign(state, project.analysis, project.preferences || {}, {
+      palette: project.palette, selectedColorId: project.selectedColorId,
+      sampledPixels: pixels, isDemo: project.photo.isDemo, photoLabel: project.photo.label
+    });
+    reservePaletteIds(state.palette);
+    Object.assign(story, project.story);
+    story.photoId++;
+    touchStory();
+    updatePhotoBadge();
+    $('imageDimensions').textContent = `${canvas.width} × ${canvas.height} px`;
+    $('processingTime').textContent = 'Восстановлено с устройства';
+    palette.renderAll();
+    storyStudio.afterPhotoChange();
+  }
+  return { analyzeImagePalette, handleImageFile, restoreProject, get loading() { return pendingLoads > 0; } };
 }
