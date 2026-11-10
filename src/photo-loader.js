@@ -10,7 +10,7 @@ export function createPhotoLoader({ decode, commit, onError }) {
       try {
         image = await decode(file);
         if (request !== sequence) return;
-        commit(image, file, Math.round(performance.now() - started));
+        await commit(image, file, Math.round(performance.now() - started), () => request === sequence);
       } catch (error) {
         if (request === sequence) onError(error);
       } finally {

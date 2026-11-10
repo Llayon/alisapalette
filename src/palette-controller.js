@@ -11,6 +11,11 @@ export function createPaletteController({ mainCanvas, haptic, copyToClipboard, a
   const pinsLayer = $('pinsLayer');
   let pinBackup = null;
   const debounce = createDebounce();
+  let analysisPending = false;
+  function scheduleAnalysis() {
+    analysisPending = true;
+    debounce(() => { analysisPending = false; analyzeImagePalette(); });
+  }
 
   function sampleCanvasColor(px, py, kernelSize = state.kernelSize) {
     const width = mainCanvas.width, height = mainCanvas.height;
@@ -205,12 +210,12 @@ export function createPaletteController({ mainCanvas, haptic, copyToClipboard, a
   $('colorCountSlider').addEventListener('input', (e) => {
     state.colorCount = parseInt(e.target.value, 10);
     $('colorCountValue').textContent = state.colorCount;
-    debounce(() => analyzeImagePalette());
+    scheduleAnalysis();
   });
   $('deltaSlider').addEventListener('input', (e) => {
     state.minDelta = parseInt(e.target.value, 10);
     $('deltaValue').textContent = state.minDelta;
-    debounce(() => analyzeImagePalette());
+    scheduleAnalysis();
   });
   $('sortSelect').addEventListener('change', (e) => {
     state.sortBy = e.target.value;
@@ -243,5 +248,18 @@ export function createPaletteController({ mainCanvas, haptic, copyToClipboard, a
     copyToClipboard(all || '—', state.palette.length ? rgbToHex(state.palette[0].r, state.palette[0].g, state.palette[0].b) : '#f43f5e', 'Вся палитра скопирована');
   });
 
-  return { renderAll, applySort };
+  return { renderAll, applySort, settlePending() {
+    debounce.cancel();
+    if (analysisPending) { analysisPending = false; analyzeImagePalette(); }
+  }, cancelPending() {
+    debounce.cancel();
+    analysisPending = false;
+    if (pinBackup && state.draggingPinId) {
+      const item = state.palette.find(c => c.id === state.draggingPinId);
+      if (item) Object.assign(item, pinBackup);
+      refreshPaletteShares();
+    }
+    state.draggingPinId = null;
+    pinBackup = null;
+  } };
 }

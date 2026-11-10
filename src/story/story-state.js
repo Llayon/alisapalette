@@ -75,7 +75,7 @@ export function restoreStory() {
     const o = JSON.parse(raw);
     if (o && typeof o === 'object') {
       if (['editorial', 'polaroid', 'magazine', 'aroma'].includes(o.template)) state.template = o.template;
-      if (o.count >= 3 && o.count <= 6) state.count = o.count;
+      if (Number.isInteger(o.count) && o.count >= 3 && o.count <= 6) state.count = o.count;
       for (const k of ['showNames', 'showHex', 'showPct']) if (typeof o[k] === 'boolean') state[k] = o[k];
       if (['cover', 'contain'].includes(o.fit)) state.fit = o.fit;
     }

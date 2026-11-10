@@ -103,6 +103,7 @@ test('последний файл и пример отменяют устаре�
   await expect(page.locator('#photoBadge')).toHaveText('second.png');
   await upload('third.png');
   await page.locator('[data-preset="flowers"]').click();
+  await expect(page.locator('#photoBadge')).toHaveClass(/demo/);
   const label = await page.locator('#photoBadge').textContent();
   await page.evaluate(() => window.pendingPhotos['third.png']());
   await expect.poll(() => page.evaluate(() => window.closedPhotos.length)).toBe(3);

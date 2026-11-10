@@ -311,6 +311,7 @@ export function createStoryStudio({ mainCanvas, haptic, copyToClipboard }) {
 
 
   return {
+    get editing() { return cropController.active; },
     syncPalette: syncStoryPalette,
     beforePhotoChange() {
       cropController.cancel({ notify: false });
