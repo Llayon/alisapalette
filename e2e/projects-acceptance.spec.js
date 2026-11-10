@@ -60,11 +60,15 @@ test('failed save preserves the current photo until changes are explicitly disca
   await expect(page.locator('#projectSaveStatus')).toContainText('Не удалось сохранить');
   const original = await page.evaluate(() => ({ palette: window.__chromastyle.palette,
     image: document.getElementById('mainCanvas').toDataURL() }));
-  page.once('dialog', dialog => dialog.dismiss());
-  await page.locator('[data-preset="flowers"]').click();
+  await Promise.all([
+    page.waitForEvent('dialog').then(dialog => dialog.dismiss()),
+    page.locator('[data-preset="flowers"]').click()
+  ]);
   expect(await page.evaluate(() => ({ palette: window.__chromastyle.palette,
     image: document.getElementById('mainCanvas').toDataURL() }))).toEqual(original);
-  page.once('dialog', dialog => dialog.accept());
-  await page.locator('[data-preset="flowers"]').click();
+  await Promise.all([
+    page.waitForEvent('dialog').then(dialog => dialog.accept()),
+    page.locator('[data-preset="flowers"]').click()
+  ]);
   await expect.poll(() => page.locator('#mainCanvas').evaluate(c => c.toDataURL())).not.toBe(original.image);
 });
